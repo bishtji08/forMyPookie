@@ -1,27 +1,27 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Upload, X, Loader2, FileImage, FileVideo, FileAudio } from 'lucide-react';
+import { Upload, X, Loader2, FileImage, FileVideo, FileAudio, Film } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
+import { cn, isVideoUrl } from '@/lib/utils';
 
 interface FileUploadProps {
   experienceId: string;
-  onUpload: (url: string, path: string) => void;
+  onUpload: (url: string, path: string, mediaType?: 'image' | 'video' | 'audio') => void;
   accept?: string;
   label?: string;
   currentUrl?: string;
-  type?: 'image' | 'video' | 'audio';
+  type?: 'image' | 'video' | 'audio' | 'media';
   className?: string;
 }
 
 export function FileUpload({
   experienceId,
   onUpload,
-  accept = 'image/*',
-  label = 'Upload Image',
+  accept = 'image/*,video/*',
+  label = 'Upload Photo or Video Snap',
   currentUrl,
-  type = 'image',
+  type = 'media',
   className,
 }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
@@ -33,7 +33,14 @@ export function FileUpload({
     setUploading(true);
     setError(null);
     try {
-      const ext = file.name.split('.').pop();
+      const ext = file.name.split('.').pop() || '';
+      const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|ogg|m4v|quicktime)$/i.test(file.name);
+      const detectedType: 'image' | 'video' | 'audio' = file.type.startsWith('audio/')
+        ? 'audio'
+        : isVideo
+        ? 'video'
+        : 'image';
+
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
       const filePath = `experiences/${experienceId}/${fileName}`;
 
@@ -47,7 +54,7 @@ export function FileUpload({
         .from('media')
         .getPublicUrl(filePath);
 
-      onUpload(urlData.publicUrl, filePath);
+      onUpload(urlData.publicUrl, filePath, detectedType);
     } catch (err: any) {
       setError(err?.message || 'Upload failed');
     } finally {
@@ -57,9 +64,9 @@ export function FileUpload({
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;
-    const maxSize = 50 * 1024 * 1024;
+    const maxSize = 80 * 1024 * 1024; // 80MB max
     if (file.size > maxSize) {
-      setError('File too large (max 50MB)');
+      setError('File too large (max 80MB)');
       return;
     }
     uploadFile(file);
@@ -71,7 +78,7 @@ export function FileUpload({
     handleFile(e.dataTransfer.files?.[0]);
   };
 
-  const Icon = type === 'video' ? FileVideo : type === 'audio' ? FileAudio : FileImage;
+  const isVideo = type === 'video' || isVideoUrl(currentUrl);
 
   return (
     <div className={className}>
@@ -84,24 +91,35 @@ export function FileUpload({
       />
 
       {currentUrl ? (
-        <div className="relative group">
-          {type === 'image' && (
-            <img src={currentUrl} alt="Uploaded" className="w-full h-32 object-cover rounded-xl" />
-          )}
-          {type === 'video' && (
-            <video src={currentUrl} className="w-full h-32 object-cover rounded-xl" controls />
-          )}
-          {type === 'audio' && (
+        <div className="relative group rounded-xl overflow-hidden bg-rose-50/50 border border-rose-100">
+          {isVideo ? (
+            <div className="relative">
+              <video
+                src={currentUrl}
+                className="w-full h-36 object-cover rounded-xl"
+                controls
+                playsInline
+                preload="metadata"
+              />
+              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-[10px] font-medium flex items-center gap-1 pointer-events-none">
+                <Film className="w-3 h-3 text-rose-300" /> Video Snap
+              </div>
+            </div>
+          ) : type === 'audio' ? (
             <div className="w-full h-20 rounded-xl bg-rose-50 flex items-center justify-center">
               <FileAudio className="w-8 h-8 text-rose-300 mr-2" />
               <audio src={currentUrl} controls className="max-w-full" />
             </div>
+          ) : (
+            <img src={currentUrl} alt="Uploaded" className="w-full h-36 object-cover rounded-xl" />
           )}
           <button
+            type="button"
             onClick={() => onUpload('', '')}
-            className="absolute top-1 right-1 p-1 rounded-lg bg-red-500 text-white opacity-0 group-hover:opacity-100 transition"
+            className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/90 text-white opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition shadow"
+            title="Remove media"
           >
-            <X className="w-3 h-3" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       ) : (
@@ -118,13 +136,17 @@ export function FileUpload({
           {uploading ? (
             <div className="flex items-center justify-center gap-2 py-2">
               <Loader2 className="w-5 h-5 text-rose-400 animate-spin" />
-              <span className="text-sm text-rose-400">Uploading...</span>
+              <span className="text-sm text-rose-400">Uploading snap...</span>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-1 py-2">
-              <Icon className="w-6 h-6 text-rose-300" />
-              <span className="text-sm text-rose-400/60">{label}</span>
-              <span className="text-xs text-rose-300/40">Click or drag & drop</span>
+              <div className="flex items-center gap-1.5 text-rose-400">
+                <FileImage className="w-5 h-5" />
+                <span className="text-xs text-rose-300">/</span>
+                <Film className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-medium text-rose-500/90">{label}</span>
+              <span className="text-xs text-rose-300/60">Photo or short video (MP4, MOV, WebM)</span>
             </div>
           )}
         </div>

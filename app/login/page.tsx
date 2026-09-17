@@ -117,6 +117,19 @@ export default function LoginPage() {
       const targetParam = searchParams.get('redirect') || redirectUrl;
       const safeTarget = getSafeRedirect(targetParam, '');
       if (safeTarget) {
+        // If user is logging in from a love link, link the experience to this user if not yet bound
+        if (safeTarget.startsWith('/love/') && data.user) {
+          const match = safeTarget.match(/\/love\/([^\/\?]+)/);
+          if (match && match[1]) {
+            await supabase
+              .from('experiences')
+              .update({
+                receiver_id: data.user.id,
+              })
+              .eq('secure_token', match[1])
+              .is('receiver_id', null);
+          }
+        }
         router.replace(safeTarget);
         return;
       }
