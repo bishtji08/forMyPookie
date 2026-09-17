@@ -56,16 +56,14 @@ function CallbackContent() {
           .eq('id', user.id)
           .maybeSingle();
 
-        // Determine user role: never allow self-granting 'admin' via query param or OAuth metadata
+        // Determine user role:
+        // A receiver account is strictly created ONLY when someone signs up/logs in from a love link/QR code!
         let assignedRole = existingProfile?.role;
         if (!assignedRole) {
-          if (roleParam === 'receiver' || roleParam === 'sender') {
-            assignedRole = roleParam;
-          } else if (redirectParam?.startsWith('/love/')) {
+          if (roleParam === 'receiver' || redirectParam?.startsWith('/love/')) {
             assignedRole = 'receiver';
           } else {
-            const metaRole = user.user_metadata?.role;
-            assignedRole = (metaRole === 'receiver' || metaRole === 'sender') ? metaRole : 'sender';
+            assignedRole = 'sender';
           }
         }
 
@@ -86,6 +84,21 @@ function CallbackContent() {
             profile_image: avatarUrl,
             status: 'active',
           });
+        }
+
+        // If this is a receiver coming from a shared love link / QR code, immediately link to the experience
+        if (assignedRole === 'receiver' && redirectParam?.startsWith('/love/')) {
+          const match = redirectParam.match(/\/love\/([^\/\?]+)/);
+          if (match && match[1]) {
+            await supabase
+              .from('experiences')
+              .update({
+                receiver_id: user.id,
+                receiver_name: fullName,
+              })
+              .eq('secure_token', match[1])
+              .is('receiver_id', null);
+          }
         }
 
         setStatus('Welcome! Taking you in… ❤️');

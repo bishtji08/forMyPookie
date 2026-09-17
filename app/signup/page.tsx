@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, Mail, Lock, User, ArrowLeft, Eye, EyeOff, MailCheck, RefreshCw } from 'lucide-react';
+import { Heart, Mail, Lock, User, ArrowLeft, Eye, EyeOff, MailCheck, RefreshCw, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { GoogleButton } from '@/components/auth/google-button';
@@ -39,8 +39,10 @@ export default function SignupPage() {
       setName(nameParam);
     }
     const roleParam = params.get('role');
-    if (roleParam === 'receiver' || roleParam === 'sender') {
-      setRole(roleParam);
+    if (roleParam === 'receiver' || (red && red.startsWith('/love/'))) {
+      setRole('receiver');
+    } else {
+      setRole('sender');
     }
   }, []);
 
@@ -52,6 +54,8 @@ export default function SignupPage() {
     }, 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
+
+  const isReceiver = role === 'receiver' || (redirectUrl?.startsWith('/love/') ?? false);
 
   const handleResendVerification = async () => {
     if (cooldown > 0 || resending || !submittedEmail) return;
@@ -82,11 +86,12 @@ export default function SignupPage() {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
+    const finalRole: 'sender' | 'receiver' = isReceiver ? 'receiver' : 'sender';
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { name: name.trim(), role } },
+        options: { data: { name: name.trim(), role: finalRole } },
       });
       if (error) throw error;
 
@@ -96,8 +101,23 @@ export default function SignupPage() {
           id: data.user.id,
           name: name.trim(),
           email: email.trim(),
-          role,
+          role: finalRole,
         });
+
+        // If this is a receiver signing up from a love link, link the experience immediately
+        if (finalRole === 'receiver' && redirectUrl) {
+          const match = redirectUrl.match(/\/love\/([^\/\?]+)/);
+          if (match && match[1]) {
+            await supabase
+              .from('experiences')
+              .update({
+                receiver_id: data.user.id,
+                receiver_name: name.trim(),
+              })
+              .eq('secure_token', match[1])
+              .is('receiver_id', null);
+          }
+        }
       }
 
       // Check if email confirmation is required by Supabase (user exists but no active session)
@@ -124,7 +144,7 @@ export default function SignupPage() {
         return;
       }
 
-      if (role === 'receiver') router.replace('/receiver');
+      if (finalRole === 'receiver') router.replace('/receiver');
       else router.replace('/sender');
     } catch (err: any) {
       let message = err?.message ?? 'Please try again.';
@@ -202,8 +222,21 @@ export default function SignupPage() {
           </div>
         ) : (
           <div className="glass rounded-3xl p-6 sm:p-8 shadow-xl shadow-rose-200/30">
-            <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Create your account</h1>
-            <p className="text-sm text-rose-400/70 mb-6">Start your love story journey.</p>
+            {isReceiver ? (
+              <div className="mb-6 text-left">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100/90 border border-rose-200/70 text-rose-600 text-xs font-semibold mb-2">
+                  <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+                  Unlocking Private Love Letter 💌
+                </div>
+                <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Create your account</h1>
+                <p className="text-sm text-rose-400/80">Sign up to read your private love letter and reply in chat.</p>
+              </div>
+            ) : (
+              <div className="mb-6 text-left">
+                <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Create your account</h1>
+                <p className="text-sm text-rose-400/70">Start your love story journey.</p>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -259,40 +292,12 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-rose-600 mb-1.5 block">I am the...</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole('sender')}
-                    className={`py-3 rounded-xl border-2 transition-all text-sm font-medium ${
-                      role === 'sender'
-                        ? 'border-rose-400 bg-rose-50 text-rose-600'
-                        : 'border-rose-200/50 bg-white/40 text-rose-400/60'
-                    }`}
-                  >
-                    Story Creator💌
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole('receiver')}
-                    className={`py-3 rounded-xl border-2 transition-all text-sm font-medium ${
-                      role === 'receiver'
-                        ? 'border-rose-400 bg-rose-50 text-rose-600'
-                        : 'border-rose-200/50 bg-white/40 text-rose-400/60'
-                    }`}
-                  >
-                    Story Receiver💖
-                  </button>
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-400 to-lavender-400 text-white font-medium hover:shadow-lg hover:shadow-rose-300/40 transition-all disabled:opacity-50 text-base sm:text-sm"
               >
-                {loading ? 'Creating account...' : 'Sign Up ❤️'}
+                {loading ? 'Creating account...' : isReceiver ? 'Unlock My Letter ❤️' : 'Sign Up ❤️'}
               </button>
             </form>
 
@@ -311,7 +316,7 @@ export default function SignupPage() {
             {/* Google Sign Up */}
             <GoogleButton
               redirectUrl={redirectUrl}
-              role={role}
+              role={isReceiver ? 'receiver' : 'sender'}
               text="Continue with Google"
             />
 

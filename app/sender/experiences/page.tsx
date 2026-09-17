@@ -187,7 +187,7 @@ function QrShareDialog({
         <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-rose-50/70 border border-rose-100 text-left">
           <Lock className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-rose-600/80 leading-relaxed">
-            <strong>Lock Protection Active:</strong> When {exp.receiver_name || 'your pookie'} opens this link or scans the QR, she will be asked to <strong>sign up or log in first</strong> before reading your love letter.
+            <strong>Lock Protection Active:</strong> When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR, she will be asked to <strong>sign up or log in first</strong> before reading your love letter.
           </p>
         </div>
       </motion.div>

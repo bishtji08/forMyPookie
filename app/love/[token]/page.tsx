@@ -15,6 +15,7 @@ import type { Experience, Memory, FunnyMoment, LoveReason, GalleryItem, Response
 import { THEME_CONFIG } from '@/lib/types';
 import { GoogleButton } from '@/components/auth/google-button';
 import { Footer } from '@/components/footer';
+import { isVideoUrl } from '@/lib/utils';
 
 export default function LoveExperiencePage() {
   const { token } = useParams();
@@ -656,8 +657,8 @@ export default function LoveExperiencePage() {
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-6 bg-rose-200/60 rounded-sm rotate-2" />
                     {mem.media_url && (
                       <div className="w-full h-48 rounded overflow-hidden mb-3 bg-rose-50">
-                        {mem.media_type === 'video' ? (
-                          <video src={mem.media_url} controls className="w-full h-full object-cover" />
+                        {mem.media_type === 'video' || isVideoUrl(mem.media_url) ? (
+                          <video src={mem.media_url} controls playsInline preload="metadata" className="w-full h-full object-cover" />
                         ) : (
                           <img src={mem.media_url} alt={mem.title} className="w-full h-full object-cover" loading="lazy" />
                         )}
@@ -686,30 +687,59 @@ export default function LoveExperiencePage() {
               <p className={`font-body text-sm ${subColor} mb-8`}>Click any photo to see it bigger.</p>
 
               <div className="columns-2 md:columns-3 gap-4 max-w-4xl mx-auto">
-                {gallery.map((item, i) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: (i % 6) * 0.05 }}
-                    className="mb-4 break-inside-avoid cursor-pointer group relative rounded-xl overflow-hidden"
-                    onClick={() => setLightboxIdx(i)}
-                  >
-                    {item.media_url ? (
-                      <img src={item.media_url} alt={item.caption} loading="lazy" className="w-full rounded-xl group-hover:opacity-90 transition" />
-                    ) : (
-                      <div className="w-full h-32 rounded-xl bg-rose-100 flex items-center justify-center">
-                        <Heart className="w-8 h-8 text-rose-300" />
-                      </div>
-                    )}
-                    {item.caption && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                        <p className="font-handwritten text-white text-lg">{item.caption}</p>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
+                {gallery.map((item, i) => {
+                  const isVideo = item.media_type === 'video' || isVideoUrl(item.media_url);
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: (i % 6) * 0.05 }}
+                      className="mb-4 break-inside-avoid cursor-pointer group relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
+                      onClick={() => setLightboxIdx(i)}
+                    >
+                      {item.media_url ? (
+                        isVideo ? (
+                          <div className="relative w-full rounded-xl overflow-hidden bg-black/10">
+                            <video
+                              src={item.media_url}
+                              playsInline
+                              muted
+                              preload="metadata"
+                              className="w-full rounded-xl object-cover max-h-72 group-hover:scale-105 transition duration-300"
+                            />
+                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 pointer-events-none">
+                              <Film className="w-3 h-3 text-rose-300" />
+                              <span>Snap</span>
+                            </div>
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition flex items-center justify-center pointer-events-none">
+                              <div className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-lg group-hover:scale-110 transition">
+                                <Play className="w-4 h-4 text-rose-500 fill-rose-500 ml-0.5" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <img
+                            src={item.media_url}
+                            alt={item.caption || 'Memory photo'}
+                            loading="lazy"
+                            className="w-full rounded-xl object-cover group-hover:opacity-95 group-hover:scale-105 transition duration-300"
+                          />
+                        )
+                      ) : (
+                        <div className="w-full h-32 rounded-xl bg-rose-100 flex items-center justify-center">
+                          <Heart className="w-8 h-8 text-rose-300" />
+                        </div>
+                      )}
+                      {item.caption && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3">
+                          <p className="font-handwritten text-white text-base sm:text-lg drop-shadow">{item.caption}</p>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           </Section>
@@ -723,21 +753,36 @@ export default function LoveExperiencePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setLightboxIdx(null)}
-              className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+              className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm"
             >
-              <button className="absolute top-4 right-4 text-white p-2" onClick={() => setLightboxIdx(null)}>
+              <button
+                className="absolute top-4 right-4 text-white hover:text-rose-300 transition p-2 rounded-full bg-white/10"
+                onClick={() => setLightboxIdx(null)}
+                aria-label="Close"
+              >
                 <X className="w-6 h-6" />
               </button>
-              <motion.img
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                src={gallery[lightboxIdx].media_url}
-                alt={gallery[lightboxIdx].caption}
-                className="max-w-full max-h-[80vh] rounded-xl"
-                onClick={(e) => e.stopPropagation()}
-              />
+              {gallery[lightboxIdx].media_type === 'video' || isVideoUrl(gallery[lightboxIdx].media_url) ? (
+                <video
+                  src={gallery[lightboxIdx].media_url}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="max-w-full max-h-[80vh] rounded-xl shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <motion.img
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  src={gallery[lightboxIdx].media_url}
+                  alt={gallery[lightboxIdx].caption}
+                  className="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
               {gallery[lightboxIdx].caption && (
-                <p className="absolute bottom-8 left-1/2 -translate-x-1/2 font-handwritten text-white text-xl">
+                <p className="absolute bottom-6 left-1/2 -translate-x-1/2 font-handwritten text-white text-lg sm:text-xl text-center px-4 py-1.5 bg-black/50 backdrop-blur-md rounded-full max-w-[90vw]">
                   {gallery[lightboxIdx].caption}
                 </p>
               )}
@@ -765,7 +810,17 @@ export default function LoveExperiencePage() {
                     className={`glass ${isDark ? 'bg-white/5' : ''} rounded-2xl p-5`}
                   >
                     {f.image_url && (
-                      <img src={f.image_url} alt={f.title} className="w-full h-32 rounded-xl object-cover mb-3" loading="lazy" />
+                      isVideoUrl(f.image_url) ? (
+                        <video
+                          src={f.image_url}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-44 rounded-xl object-cover mb-3"
+                        />
+                      ) : (
+                        <img src={f.image_url} alt={f.title} className="w-full h-36 rounded-xl object-cover mb-3" loading="lazy" />
+                      )
                     )}
                     <h3 className="font-display text-lg font-semibold mb-1" style={{ color: themeConfig.accent }}>{f.title}</h3>
                     <p className={`text-sm ${subColor}`}>{f.description}</p>
@@ -799,6 +854,24 @@ export default function LoveExperiencePage() {
                     <div className="absolute top-2 right-2">
                       <Star className="w-4 h-4 text-rose-300/40" />
                     </div>
+                    {r.image_url && (
+                      isVideoUrl(r.image_url) ? (
+                        <video
+                          src={r.image_url}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-36 rounded-xl object-cover mb-3"
+                        />
+                      ) : (
+                        <img
+                          src={r.image_url}
+                          alt={r.title}
+                          className="w-full h-36 rounded-xl object-cover mb-3"
+                          loading="lazy"
+                        />
+                      )
+                    )}
                     <h3 className="font-display text-lg font-semibold mb-2" style={{ color: themeConfig.accent }}>{r.title}</h3>
                     <p className={`text-sm ${subColor}`}>{r.description}</p>
                   </motion.div>

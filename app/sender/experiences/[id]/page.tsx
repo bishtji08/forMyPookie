@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FileUpload } from '@/components/upload/file-upload';
 import type { Experience, Memory, FunnyMoment, LoveReason, GalleryItem, ExperienceTheme } from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
-import { getAppUrl } from '@/lib/utils';
+import { getAppUrl, isVideoUrl } from '@/lib/utils';
 
 type Tab = 'details' | 'receiver' | 'memories' | 'funny' | 'reasons' | 'gallery' | 'share';
 
@@ -531,11 +531,16 @@ export default function ExperienceDetailPage() {
                       </div>
                       <FileUpload
                         experienceId={exp.id}
-                        type={m.media_type === 'video' ? 'video' : 'image'}
-                        accept={m.media_type === 'video' ? 'video/*' : 'image/*'}
-                        label="Upload Photo or Video"
+                        type="media"
+                        accept="image/*,video/*"
+                        label="Upload Photo or Video Snap"
                         currentUrl={m.media_url || ''}
-                        onUpload={(url) => updateMemory(m.id, { media_url: url })}
+                        onUpload={(url, _path, mediaType) =>
+                          updateMemory(m.id, {
+                            media_url: url,
+                            media_type: (mediaType as 'image' | 'video') || (isVideoUrl(url) ? 'video' : 'image'),
+                          })
+                        }
                       />
                       <input
                         value={m.caption}
@@ -577,9 +582,9 @@ export default function ExperienceDetailPage() {
                   />
                   <FileUpload
                     experienceId={exp.id}
-                    type="image"
-                    accept="image/*"
-                    label="Upload Image (optional)"
+                    type="media"
+                    accept="image/*,video/*"
+                    label="Upload Photo or Funny Clip (optional)"
                     currentUrl={f.image_url || ''}
                     onUpload={(url) => updateFunny(f.id, { image_url: url })}
                   />
@@ -614,9 +619,9 @@ export default function ExperienceDetailPage() {
                   />
                   <FileUpload
                     experienceId={exp.id}
-                    type="image"
-                    accept="image/*"
-                    label="Upload Image (optional)"
+                    type="media"
+                    accept="image/*,video/*"
+                    label="Upload Photo or Video Snap (optional)"
                     currentUrl={r.image_url || ''}
                     onUpload={(url) => updateReason(r.id, { image_url: url })}
                   />
@@ -654,11 +659,16 @@ export default function ExperienceDetailPage() {
                   </div>
                   <FileUpload
                     experienceId={exp.id}
-                    type="image"
-                    accept="image/*"
-                    label="Upload Photo"
+                    type="media"
+                    accept="image/*,video/*"
+                    label="Upload Photo or Video Snap"
                     currentUrl={g.media_url || ''}
-                    onUpload={(url) => updateGalleryItem(g.id, { media_url: url })}
+                    onUpload={(url, _path, mediaType) =>
+                      updateGalleryItem(g.id, {
+                        media_url: url,
+                        media_type: (mediaType as 'image' | 'video') || (isVideoUrl(url) ? 'video' : 'image'),
+                      })
+                    }
                   />
                   <input
                     value={g.caption}
@@ -731,7 +741,7 @@ export default function ExperienceDetailPage() {
                 <div className="text-left">
                   <p className="text-sm font-semibold text-rose-700">Lock Protection Active</p>
                   <p className="text-xs text-rose-600/80 mt-0.5 leading-relaxed">
-                    When {exp.receiver_name || 'your pookie'} opens this link or scans the QR code, she will be asked to <strong>sign up or log in first</strong> before unlocking the letter. Once logged in, she can read everything and chat with you directly.
+                    When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR code, she will be asked to <strong>sign up or log in first</strong> before unlocking the letter. Once logged in, she can read everything and chat with you directly.
                   </p>
                 </div>
               </div>
