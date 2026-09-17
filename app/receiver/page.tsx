@@ -47,12 +47,12 @@ export default function ReceiverOverview() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-rose-700 mb-1">
+    <div className="p-4 sm:p-6 md:p-8 max-w-4xl mx-auto w-full">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-rose-700 mb-1">
           Hey, {profile?.name} ❤️
         </h1>
-        <p className="text-rose-400/60">Someone wrote something special for you.</p>
+        <p className="text-rose-400/70 text-xs sm:text-sm">Someone wrote something special for you.</p>
       </div>
 
       {experiences.length === 0 ? (
@@ -112,8 +112,8 @@ export default function ReceiverOverview() {
       )}
 
       {/* Quick links */}
-      <div className="grid grid-cols-2 gap-4 mt-8">
-        <Link href="/receiver/messages" className="glass rounded-2xl p-5 hover:shadow-md transition-all">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-8">
+        <Link href="/receiver/messages" className="glass rounded-2xl p-4 sm:p-5 hover:shadow-md transition-all">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lavender-400 to-purple-400 flex items-center justify-center relative">
               <MessageCircle className="w-5 h-5 text-white" />

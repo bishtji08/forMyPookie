@@ -1,11 +1,23 @@
 'use client';
 
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Heart, Sparkles, Mail, MessageCircle, Shield, ArrowRight } from 'lucide-react';
 import { Footer } from '@/components/footer';
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') || params.get('error_description')) {
+      router.replace(`/login?${params.toString()}`);
+    }
+  }, [router]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#fff1f5] via-[#f8eaff] to-[#fffaf5] overflow-hidden">
       {/* Floating hearts background */}

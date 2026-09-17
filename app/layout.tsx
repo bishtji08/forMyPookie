@@ -10,7 +10,12 @@ const poppins = Poppins({
   variable: '--font-poppins',
 });
 
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://my-pookie-1qyt.vercel.app');
+
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: 'For My Pookie ❤️ — A Love Letter Just For You',
   description: 'A private romantic apology and love-story platform. Make her smile first.',
   robots: { index: false, follow: false },

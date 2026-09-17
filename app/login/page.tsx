@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Heart, Mail, Lock, ArrowLeft, Eye, EyeOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
@@ -21,6 +21,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
+  // Email confirmation state
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const red = params.get('redirect');
@@ -28,13 +33,70 @@ export default function LoginPage() {
       const safe = getSafeRedirect(red, '');
       if (safe) setRedirectUrl(safe);
     }
-  }, []);
+
+    // Detect OAuth error callbacks
+    const errorParam = params.get('error');
+    const errorDesc = params.get('error_description');
+    if (errorParam) {
+      if (errorParam === 'access_denied' || errorDesc?.toLowerCase().includes('cancel') || errorDesc?.toLowerCase().includes('denied')) {
+        toast({
+          title: 'Sign in cancelled',
+          description: 'Google sign-in was cancelled or access was denied. You can try again anytime.',
+        });
+      } else {
+        toast({
+          title: 'Sign in issue',
+          description: errorDesc || 'Unable to complete sign-in. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    }
+  }, [toast]);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  const handleResendConfirmation = async () => {
+    if (cooldown > 0 || resending || !unconfirmedEmail) return;
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: unconfirmedEmail,
+      });
+      if (error) throw error;
+      toast({
+        title: 'Confirmation email resent! 💌',
+        description: `Check your inbox at ${unconfirmedEmail}.`,
+      });
+      setCooldown(60);
+    } catch (err: any) {
+      toast({
+        title: 'Failed to resend email',
+        description: err?.message || 'Please wait a moment and try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
+    setUnconfirmedEmail(null);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
       if (error) throw error;
       await refreshProfile();
       toast({ title: 'Welcome back! ❤️', description: 'You are now logged in.' });
@@ -63,17 +125,27 @@ export default function LoginPage() {
       else if (role === 'receiver') router.replace('/receiver');
       else router.replace('/sender');
     } catch (err: any) {
-      let message = err?.message ?? 'Please check your credentials.';
-      if (err?.message?.includes('Invalid login')) {
-        message = 'Wrong email or password. Please try again.';
-      } else if (err?.message?.includes('Email not')) {
-        message = 'No account found with this email. Try signing up instead.';
+      const errLower = (err?.message || '').toLowerCase();
+      if (errLower.includes('not confirmed') || errLower.includes('email_not_confirmed')) {
+        setUnconfirmedEmail(email.trim());
+        toast({
+          title: 'Email not confirmed',
+          description: 'Please verify your email address before logging in.',
+          variant: 'destructive',
+        });
+      } else if (errLower.includes('invalid login') || errLower.includes('invalid_credentials') || errLower.includes('invalid_grant')) {
+        toast({
+          title: 'Login failed',
+          description: 'Incorrect email or password. Please try again.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Login failed',
+          description: err?.message || 'Please check your credentials and try again.',
+          variant: 'destructive',
+        });
       }
-      toast({
-        title: 'Login failed',
-        description: message,
-        variant: 'destructive',
-      });
     } finally {
       setLoading(false);
     }
@@ -92,9 +164,36 @@ export default function LoginPage() {
           <span className="font-display text-xl font-bold text-rose-600">For My Pookie</span>
         </Link>
 
-        <div className="glass rounded-3xl p-8 shadow-xl shadow-rose-200/30">
+        <div className="glass rounded-3xl p-6 sm:p-8 shadow-xl shadow-rose-200/30">
           <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Welcome back</h1>
           <p className="text-sm text-rose-400/70 mb-6">Log in to continue your story.</p>
+
+          {unconfirmedEmail && (
+            <div className="mb-6 p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs sm:text-sm">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-amber-800">Email not verified yet</p>
+                  <p className="text-amber-700/90 mt-0.5">
+                    Your account (<span className="font-medium text-amber-900">{unconfirmedEmail}</span>) needs to be verified before signing in.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={resending || cooldown > 0}
+                    className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium transition disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
+                    {resending
+                      ? 'Sending...'
+                      : cooldown > 0
+                      ? `Resend in ${cooldown}s`
+                      : 'Resend confirmation email'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -107,7 +206,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="your@email.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none transition text-rose-700 placeholder:text-rose-300/50"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none transition text-rose-700 placeholder:text-rose-300/50 text-base sm:text-sm"
                 />
               </div>
             </div>
@@ -122,12 +221,12 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none transition text-rose-700 placeholder:text-rose-300/50"
+                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none transition text-rose-700 placeholder:text-rose-300/50 text-base sm:text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-300 hover:text-rose-400"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-300 hover:text-rose-400 p-1"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -137,7 +236,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-400 to-lavender-400 text-white font-medium hover:shadow-lg hover:shadow-rose-300/40 transition-all disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-400 to-lavender-400 text-white font-medium hover:shadow-lg hover:shadow-rose-300/40 transition-all disabled:opacity-50 text-base sm:text-sm"
             >
               {loading ? 'Logging in...' : 'Login ❤️'}
             </button>

@@ -58,24 +58,24 @@ export default function AdminAnalyticsPage() {
   const totalResponses = stats.yesResponses + stats.maybeResponses + stats.noResponses || 1;
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto">
-      <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Analytics</h1>
-      <p className="text-rose-400/60 text-sm mb-6">Platform statistics and insights</p>
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto w-full">
+      <h1 className="font-display text-2xl sm:text-3xl font-bold text-rose-700 mb-1">Analytics</h1>
+      <p className="text-rose-400/70 text-xs sm:text-sm mb-6">Platform statistics and insights</p>
 
       {/* User distribution */}
-      <div className="glass rounded-2xl p-6 mb-6">
-        <h2 className="font-display text-lg font-semibold text-rose-700 mb-4">User Distribution</h2>
-        <div className="space-y-3">
+      <div className="glass rounded-2xl p-4 sm:p-6 mb-6">
+        <h2 className="font-display text-base sm:text-lg font-semibold text-rose-700 mb-4">User Distribution</h2>
+        <div className="space-y-4">
           {[
             { label: 'Senders', value: stats.senders, total: stats.totalUsers, color: 'bg-rose-400' },
             { label: 'Receivers', value: stats.receivers, total: stats.totalUsers, color: 'bg-lavender-400' },
           ].map((item) => (
             <div key={item.label}>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-rose-600">{item.label}</span>
-                <span className="text-rose-400/60">{item.value} / {item.total}</span>
+              <div className="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                <span className="text-rose-700 font-medium truncate">{item.label}</span>
+                <span className="text-rose-500/80 font-semibold ml-2 flex-shrink-0">{item.value} / {item.total}</span>
               </div>
-              <div className="w-full h-3 bg-rose-100/50 rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-rose-100/60 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${(item.value / (item.total || 1)) * 100}%` }}
@@ -89,20 +89,22 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Response breakdown */}
-      <div className="glass rounded-2xl p-6 mb-6">
-        <h2 className="font-display text-lg font-semibold text-rose-700 mb-4">Response Breakdown</h2>
-        <div className="space-y-3">
+      <div className="glass rounded-2xl p-4 sm:p-6 mb-6">
+        <h2 className="font-display text-base sm:text-lg font-semibold text-rose-700 mb-4">Response Breakdown</h2>
+        <div className="space-y-4">
           {[
             { label: 'YES', value: stats.yesResponses, color: 'bg-green-400' },
             { label: 'MAYBE', value: stats.maybeResponses, color: 'bg-amber-400' },
             { label: 'NO', value: stats.noResponses, color: 'bg-gray-400' },
           ].map((item) => (
             <div key={item.label}>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-rose-600">{item.label}</span>
-                <span className="text-rose-400/60">{item.value} ({Math.round((item.value / totalResponses) * 100)}%)</span>
+              <div className="flex justify-between items-center text-xs sm:text-sm mb-1.5">
+                <span className="text-rose-700 font-medium truncate">{item.label}</span>
+                <span className="text-rose-500/80 font-semibold ml-2 flex-shrink-0">
+                  {item.value} ({Math.round((item.value / totalResponses) * 100)}%)
+                </span>
               </div>
-              <div className="w-full h-3 bg-rose-100/50 rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-rose-100/60 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${(item.value / totalResponses) * 100}%` }}
@@ -116,7 +118,7 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Key metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: 'Total Users', value: stats.totalUsers, icon: Users },
           { label: 'Experiences', value: stats.totalExperiences, icon: FileHeart },
@@ -127,12 +129,12 @@ export default function AdminAnalyticsPage() {
             key={i}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.1 }}
-            className="glass rounded-2xl p-5 text-center"
+            transition={{ delay: i * 0.08 }}
+            className="glass rounded-2xl p-4 sm:p-5 text-center flex flex-col justify-center items-center"
           >
-            <m.icon className="w-6 h-6 text-rose-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-rose-700">{m.value}</p>
-            <p className="text-sm text-rose-400/60">{m.label}</p>
+            <m.icon className="w-5 h-5 sm:w-6 sm:h-6 text-rose-400 mb-1.5" />
+            <p className="text-xl sm:text-2xl font-bold text-rose-700">{m.value}</p>
+            <p className="text-xs sm:text-sm text-rose-400/70 truncate w-full">{m.label}</p>
           </motion.div>
         ))}
       </div>

@@ -37,9 +37,9 @@ export default function AdminReportsPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto">
-      <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Reports</h1>
-      <p className="text-rose-400/60 text-sm mb-6">Moderation and user reports</p>
+    <div className="p-4 sm:p-6 md:p-8 max-w-4xl mx-auto w-full">
+      <h1 className="font-display text-2xl sm:text-3xl font-bold text-rose-700 mb-1">Reports</h1>
+      <p className="text-rose-400/70 text-xs sm:text-sm mb-6">Moderation and user reports</p>
 
       {reports.length === 0 ? (
         <div className="glass rounded-2xl p-12 text-center">

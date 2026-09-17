@@ -82,7 +82,7 @@ export default function CreateExperiencePage() {
 
   return (
     <div className="min-h-full bg-gradient-to-b from-[#fff8fa] to-[#faf5ff]">
-      <div className="max-w-2xl mx-auto p-6 md:p-8">
+      <div className="max-w-2xl mx-auto p-4 sm:p-6 md:p-8 w-full">
         <h1 className="font-display text-2xl font-bold text-rose-700 mb-2">Create a Love Letter</h1>
         <p className="text-rose-400/60 text-sm mb-6">Build a personalized romantic experience for your pookie.</p>
 
@@ -106,7 +106,7 @@ export default function CreateExperiencePage() {
           key={step}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="glass rounded-2xl p-6 md:p-8"
+          className="glass rounded-2xl p-4 sm:p-6 md:p-8"
         >
           {/* Step 0: Receiver */}
           {step === 0 && (

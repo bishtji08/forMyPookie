@@ -25,3 +25,20 @@ export function getSafeRedirect(url: string | null | undefined, fallback: string
     return fallback;
   }
 }
+
+/**
+ * Resolves the primary application URL dynamically from the browser window or environment variables.
+ * Guarantees no trailing slashes and avoids hardcoded localhost dependencies in production.
+ */
+export function getAppUrl(): string {
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin;
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, '');
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL.replace(/\/+$/, '')}`;
+  }
+  return 'https://my-pookie-1qyt.vercel.app';
+}

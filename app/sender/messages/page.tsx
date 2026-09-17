@@ -39,15 +39,19 @@ export default function SenderMessagesPage() {
   }
 
   return (
-    <div className="h-screen flex">
+    <div className="h-[calc(100vh-4rem)] md:h-screen flex flex-col md:flex-row w-full">
       {/* Conversation list */}
-      <div className="w-72 border-r border-rose-100/50 bg-white/40 backdrop-blur-sm overflow-y-auto">
+      <div
+        className={`${
+          selectedExp ? 'hidden md:flex' : 'flex'
+        } w-full md:w-72 flex-shrink-0 border-r border-rose-100/50 bg-white/40 backdrop-blur-sm flex-col overflow-y-auto h-full`}
+      >
         <div className="px-5 py-4 border-b border-rose-100/50">
           <h1 className="font-display text-lg font-bold text-rose-700">Messages</h1>
           <p className="text-xs text-rose-400/60">Your private conversations</p>
         </div>
         {experiences.length === 0 ? (
-          <div className="p-6 text-center">
+          <div className="p-6 text-center my-auto">
             <MessageCircle className="w-10 h-10 text-rose-300 mx-auto mb-3" />
             <p className="text-sm text-rose-400/60">No conversations yet. Once your pookie responds, chat will appear here.</p>
           </div>
@@ -58,11 +62,11 @@ export default function SenderMessagesPage() {
                 key={exp.id}
                 onClick={() => selectExp(exp)}
                 className={`w-full text-left px-3 py-3 rounded-xl transition-all ${
-                  selectedExp?.id === exp.id ? 'bg-rose-100/60' : 'hover:bg-rose-50/60'
+                  selectedExp?.id === exp.id ? 'bg-rose-100/70 font-semibold' : 'hover:bg-rose-50/60'
                 }`}
               >
-                <p className="font-medium text-rose-700 text-sm">{exp.receiver_name || 'Pookie'}</p>
-                <p className="text-xs text-rose-400/50 mt-0.5">
+                <p className="font-medium text-rose-700 text-sm truncate">{exp.receiver_name || 'Pookie'}</p>
+                <p className="text-xs text-rose-400/60 mt-0.5">
                   {exp.response_status ? exp.response_status.toUpperCase() : 'No response yet'}
                 </p>
               </button>
@@ -72,18 +76,24 @@ export default function SenderMessagesPage() {
       </div>
 
       {/* Chat window */}
-      <div className="flex-1">
+      <div
+        className={`${
+          selectedExp ? 'flex' : 'hidden md:flex'
+        } flex-1 min-w-0 h-full flex-col`}
+      >
         {selectedExp && selectedExp.receiver_id ? (
           <ChatWindow
             experienceId={selectedExp.id}
             otherUserId={selectedExp.receiver_id}
             otherUserName={receiverName}
+            onBack={() => setSelectedExp(null)}
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-full bg-gradient-to-br from-[#fff8fa] to-[#faf5ff] p-6">
             <div className="text-center">
               <MessageCircle className="w-16 h-16 text-rose-200 mx-auto mb-4" />
-              <p className="text-rose-400/60">Select a conversation to start chatting</p>
+              <h2 className="font-display text-lg font-semibold text-rose-700 mb-1">Your Chat Space</h2>
+              <p className="text-rose-400/60 text-sm">Select a conversation to start chatting</p>
             </div>
           </div>
         )}

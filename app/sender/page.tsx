@@ -62,16 +62,16 @@ export default function SenderOverview() {
   ];
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-rose-700 mb-1">
+    <div className="p-4 sm:p-6 md:p-8 max-w-6xl mx-auto w-full">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-rose-700 mb-1">
           Hey, {profile?.name} ❤️
         </h1>
-        <p className="text-rose-400/60">Here's how your love stories are doing.</p>
+        <p className="text-rose-400/70 text-xs sm:text-sm">Here's how your love stories are doing.</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
         {stats.map((stat, i) => (
           <motion.div
             key={i}

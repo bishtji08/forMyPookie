@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getAppUrl } from '@/lib/utils';
 
 export function GoogleIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
@@ -50,9 +51,9 @@ export function GoogleButton({
     setLoading(true);
 
     try {
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const baseUrl = getAppUrl();
       const targetRedirect = redirectUrl && redirectUrl.startsWith('/') ? redirectUrl : '';
-      const callbackUrl = new URL('/auth/callback', origin);
+      const callbackUrl = new URL('/auth/callback', baseUrl);
       if (targetRedirect) {
         callbackUrl.searchParams.set('redirect', targetRedirect);
       }

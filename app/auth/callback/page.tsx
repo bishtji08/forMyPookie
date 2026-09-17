@@ -17,6 +17,16 @@ function CallbackContent() {
 
     const processAuth = async () => {
       try {
+        const errorParam = searchParams.get('error');
+        const errorDesc = searchParams.get('error_description');
+        if (errorParam) {
+          const q = new URLSearchParams();
+          q.set('error', errorParam);
+          if (errorDesc) q.set('error_description', errorDesc);
+          router.replace(`/login?${q.toString()}`);
+          return;
+        }
+
         const code = searchParams.get('code');
         const redirectParam = searchParams.get('redirect');
         const roleParam = searchParams.get('role');

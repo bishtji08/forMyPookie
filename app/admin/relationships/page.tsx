@@ -32,9 +32,9 @@ export default function AdminRelationshipsPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto">
-      <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Relationships</h1>
-      <p className="text-rose-400/60 text-sm mb-6">Manage all relationship experiences</p>
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto w-full">
+      <h1 className="font-display text-2xl sm:text-3xl font-bold text-rose-700 mb-1">Relationships</h1>
+      <p className="text-rose-400/70 text-xs sm:text-sm mb-6">Manage all relationship experiences</p>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">

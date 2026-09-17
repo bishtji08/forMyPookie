@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { Experience, ExperienceStatus } from '@/lib/types';
+import { getAppUrl } from '@/lib/utils';
 
 // ── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_STYLES: Record<ExperienceStatus, string> = {
@@ -67,7 +68,8 @@ function QrShareDialog({
 }) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/love/${exp.secure_token}` : '';
+  const appUrl = getAppUrl() || (typeof window !== 'undefined' ? window.location.origin : '');
+  const shareUrl = exp ? `${appUrl}/love/${exp.secure_token}` : '';
 
   const copyLink = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -297,7 +299,8 @@ export default function ExperiencesPage() {
 
   // ── Share link ─────────────────────────────────────────────────────────
   const copyLink = (token: string) => {
-    const url = `${window.location.origin}/love/${token}`;
+    const appUrl = getAppUrl() || (typeof window !== 'undefined' ? window.location.origin : '');
+    const url = `${appUrl}/love/${token}`;
     navigator.clipboard.writeText(url);
     toast({ title: 'Link copied to clipboard! 💌' });
   };

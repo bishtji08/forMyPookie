@@ -43,11 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // If profile record doesn't exist yet, construct from user metadata and create it
+      // Security: never allow self-granting 'admin' via client metadata
+      const rawRole = currentUser.user_metadata?.role;
+      const safeRole: 'sender' | 'receiver' = rawRole === 'receiver' ? 'receiver' : 'sender';
+
       const fallback: Profile = {
         id: currentUser.id,
         email: currentUser.email || '',
         name: currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'User',
-        role: (currentUser.user_metadata?.role as any) || 'sender',
+        role: safeRole,
         profile_image: null,
         status: 'active',
         created_at: currentUser.created_at,

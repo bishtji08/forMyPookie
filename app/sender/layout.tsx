@@ -38,10 +38,10 @@ export default function SenderLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-b from-[#fff8fa] to-[#faf5ff]">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-b from-[#fff8fa] to-[#faf5ff]">
       <DashboardSidebar />
-      <main className="flex-1 overflow-y-auto flex flex-col justify-between">
-        <div className="flex-1">{children}</div>
+      <main className="flex-1 w-full min-w-0 overflow-x-hidden flex flex-col justify-between">
+        <div className="flex-1 w-full">{children}</div>
         <Footer className="mt-8" />
       </main>
     </div>

@@ -43,9 +43,9 @@ export default function AdminMessagesPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto">
-      <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Messages</h1>
-      <p className="text-rose-400/60 text-sm mb-6">Recent message activity (admin view)</p>
+    <div className="p-4 sm:p-6 md:p-8 max-w-4xl mx-auto w-full">
+      <h1 className="font-display text-2xl sm:text-3xl font-bold text-rose-700 mb-1">Messages</h1>
+      <p className="text-rose-400/70 text-xs sm:text-sm mb-6">Recent message activity (admin view)</p>
 
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-300" />

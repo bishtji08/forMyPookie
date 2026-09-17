@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Heart } from 'lucide-react';
+import { Send, Heart, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import type { Message } from '@/lib/types';
@@ -11,9 +11,10 @@ interface ChatWindowProps {
   experienceId: string;
   otherUserId: string;
   otherUserName: string;
+  onBack?: () => void;
 }
 
-export function ChatWindow({ experienceId, otherUserId, otherUserName }: ChatWindowProps) {
+export function ChatWindow({ experienceId, otherUserId, otherUserName, onBack }: ChatWindowProps) {
   const { profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -127,13 +128,23 @@ export function ChatWindow({ experienceId, otherUserId, otherUserName }: ChatWin
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-[#fff8fa] to-[#faf5ff]">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-rose-100/50 bg-white/60 backdrop-blur-sm flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-lavender-400 flex items-center justify-center text-white font-medium">
+      <div className="px-4 sm:px-5 py-3 border-b border-rose-100/50 bg-white/75 backdrop-blur-sm flex items-center gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="md:hidden p-2 -ml-1 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition active:scale-95"
+            aria-label="Back to conversations"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        )}
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-rose-400 to-lavender-400 flex items-center justify-center text-white font-medium flex-shrink-0 text-sm">
           {otherUserName.charAt(0).toUpperCase()}
         </div>
-        <div>
-          <p className="font-medium text-rose-700">{otherUserName}</p>
-          <p className="text-xs text-rose-400/60">{otherTyping ? 'typing...' : 'Private chat'}</p>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-rose-700 text-sm truncate">{otherUserName}</p>
+          <p className="text-[11px] sm:text-xs text-rose-400/60 truncate">{otherTyping ? 'typing...' : 'Private chat'}</p>
         </div>
       </div>
 

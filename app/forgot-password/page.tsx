@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Heart, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getAppUrl } from '@/lib/utils';
 
 export default function ForgotPasswordPage() {
   const { toast } = useToast();
@@ -17,8 +18,9 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      const appUrl = getAppUrl() || (typeof window !== 'undefined' ? window.location.origin : '');
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${appUrl}/reset-password`,
       });
       if (error) throw error;
       setSent(true);

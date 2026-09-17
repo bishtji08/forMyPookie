@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FileUpload } from '@/components/upload/file-upload';
 import type { Experience, Memory, FunnyMoment, LoveReason, GalleryItem, ExperienceTheme } from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
+import { getAppUrl } from '@/lib/utils';
 
 type Tab = 'details' | 'receiver' | 'memories' | 'funny' | 'reasons' | 'gallery' | 'share';
 
@@ -131,7 +132,8 @@ export default function ExperienceDetailPage() {
     }
   };
 
-  const shareUrl = exp ? `${window.location.origin}/love/${exp.secure_token}` : '';
+  const appUrl = getAppUrl() || (typeof window !== 'undefined' ? window.location.origin : '');
+  const shareUrl = exp ? `${appUrl}/love/${exp.secure_token}` : '';
 
   const copyLink = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -280,7 +282,7 @@ export default function ExperienceDetailPage() {
 
   return (
     <div className="min-h-full bg-gradient-to-b from-[#fff8fa] to-[#faf5ff]">
-      <div className="max-w-4xl mx-auto p-6 md:p-8">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 w-full">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -338,8 +340,8 @@ export default function ExperienceDetailPage() {
         <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           {/* Details */}
           {tab === 'details' && (
-            <div className="glass rounded-2xl p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="glass rounded-2xl p-4 sm:p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-rose-600 mb-1.5 block">Her Name</label>
                   <input
@@ -400,7 +402,7 @@ export default function ExperienceDetailPage() {
                   className="w-full px-3 py-2.5 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 outline-none text-rose-700 resize-none font-serif-body text-lg"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-rose-600 mb-1.5 block">Theme</label>
                   <select

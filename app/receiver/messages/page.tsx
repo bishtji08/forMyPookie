@@ -129,9 +129,13 @@ export default function ReceiverMessagesPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-0px)]">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] md:h-screen w-full">
       {/* ── Sidebar ── */}
-      <div className="w-72 flex-shrink-0 border-r border-rose-100/50 bg-white/40 backdrop-blur-sm flex flex-col">
+      <div
+        className={`${
+          selectedExp ? 'hidden md:flex' : 'flex'
+        } w-full md:w-72 flex-shrink-0 border-r border-rose-100/50 bg-white/40 backdrop-blur-sm flex-col h-full`}
+      >
         {/* Header */}
         <div className="px-5 py-4 border-b border-rose-100/50">
           <div className="flex items-center gap-2 mb-1">
@@ -229,12 +233,17 @@ export default function ReceiverMessagesPage() {
       </div>
 
       {/* ── Chat panel ── */}
-      <div className="flex-1 min-w-0">
+      <div
+        className={`${
+          selectedExp ? 'flex' : 'hidden md:flex'
+        } flex-1 min-w-0 h-full flex-col`}
+      >
         {selectedExp ? (
           <ChatWindow
             experienceId={selectedExp.id}
             otherUserId={selectedExp.sender_id}
             otherUserName={selectedExp.sender_name || 'Sender'}
+            onBack={() => setSelectedExp(null)}
           />
         ) : (
           <div className="flex items-center justify-center h-full bg-gradient-to-br from-[#fff8fa] to-[#faf5ff]">
