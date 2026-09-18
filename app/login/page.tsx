@@ -117,19 +117,6 @@ export default function LoginPage() {
       const targetParam = searchParams.get('redirect') || redirectUrl;
       const safeTarget = getSafeRedirect(targetParam, '');
       if (safeTarget) {
-        // If user is logging in from a love link, link the experience to this user if not yet bound
-        if (safeTarget.startsWith('/love/') && data.user) {
-          const match = safeTarget.match(/\/love\/([^\/\?]+)/);
-          if (match && match[1]) {
-            await supabase
-              .from('experiences')
-              .update({
-                receiver_id: data.user.id,
-              })
-              .eq('secure_token', match[1])
-              .is('receiver_id', null);
-          }
-        }
         router.replace(safeTarget);
         return;
       }
@@ -219,7 +206,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="your@email.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none transition text-rose-700 placeholder:text-rose-300/50 text-base sm:text-sm"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none transition text-rose-700"
                 />
               </div>
             </div>
@@ -234,7 +221,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none transition text-rose-700 placeholder:text-rose-300/50 text-base sm:text-sm"
+                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none transition text-rose-700"
                 />
                 <button
                   type="button"
@@ -249,7 +236,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-400 to-lavender-400 text-white font-medium hover:shadow-lg hover:shadow-rose-300/40 transition-all disabled:opacity-50 text-base sm:text-sm"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-400 to-lavender-400 text-white font-medium hover:shadow-lg hover:shadow-rose-300/40 transition-all disabled:opacity-50 text-sm"
             >
               {loading ? 'Logging in...' : 'Login ❤️'}
             </button>
