@@ -76,7 +76,7 @@ export function getRelationshipShareUrl(id: string): string {
   const cleanId = (id || '').trim();
   const prodBase =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '') ||
-    'https://my-pookie-three.vercel.app';
+    'https://for-my-pookie-gilt.vercel.app';
 
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
