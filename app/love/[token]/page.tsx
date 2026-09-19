@@ -5,13 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, Sparkles, Star, X, Coffee, Utensils, Film, Moon, Car, Eye,
-  Volume2, VolumeX, Play, Pause, ChevronDown, Lock, ArrowLeft, ArrowRight, MessageCircle
+  Heart, Sparkles, X, Volume2, VolumeX, Play, Pause, Lock, ArrowLeft, ArrowRight, MessageCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
-import type { Experience, Memory, FunnyMoment, LoveReason, GalleryItem, ResponseStatus, ExperienceTheme } from '@/lib/types';
+import type { Experience, Memory, ResponseStatus, ExperienceTheme } from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
 import { GoogleButton } from '@/components/auth/google-button';
 import { Footer } from '@/components/footer';
@@ -32,25 +31,18 @@ export default function LoveExperiencePage() {
   const [submittingDate, setSubmittingDate] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [memories, setMemories] = useState<Memory[]>([]);
-  const [funnyMoments, setFunnyMoments] = useState<FunnyMoment[]>([]);
-  const [loveReasons, setLoveReasons] = useState<LoveReason[]>([]);
-  const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [opened, setOpened] = useState(false);
   const [response, setResponse] = useState<ResponseStatus | null>(null);
-  const [showDateSelection, setShowDateSelection] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [customDateInput, setCustomDateInput] = useState('');
   const [dateCategory, setDateCategory] = useState<string>('all');
   const [dateNote, setDateNote] = useState('');
+  const [dateConfirmed, setDateConfirmed] = useState(false);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-  const [loveMeterValue, setLoveMeterValue] = useState(0);
-  const [loveMeterCalculating, setLoveMeterCalculating] = useState(false);
-  const [loveMeterDone, setLoveMeterDone] = useState(false);
-  const [gameAnswer, setGameAnswer] = useState<string | null>(null);
   const [heartClicks, setHeartClicks] = useState(0);
   const [easterEgg, setEasterEgg] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -97,19 +89,15 @@ export default function LoveExperiencePage() {
         }
       }
 
-      const [memRes, funnyRes, loveRes, galleryRes] = await Promise.all([
-        supabase.from('memories').select('*').eq('experience_id', expData.id).order('sort_order'),
-        supabase.from('funny_moments').select('*').eq('experience_id', expData.id).order('sort_order'),
-        supabase.from('love_reasons').select('*').eq('experience_id', expData.id).order('sort_order'),
-        supabase.from('gallery_items').select('*').eq('experience_id', expData.id).order('sort_order'),
-      ]);
+      const memRes = await supabase
+        .from('memories')
+        .select('*')
+        .eq('experience_id', expData.id)
+        .order('sort_order');
 
       if (!isMounted) return;
 
       setMemories((memRes.data as Memory[]) || []);
-      setFunnyMoments((funnyRes.data as FunnyMoment[]) || []);
-      setLoveReasons((loveRes.data as LoveReason[]) || []);
-      setGallery((galleryRes.data as GalleryItem[]) || []);
       setLoading(false);
     })();
 
@@ -166,17 +154,15 @@ export default function LoveExperiencePage() {
     });
 
     // Notify sender
-    const respText = resp === 'yes' ? 'YES 😭❤️' : resp === 'maybe' ? 'MAYBE' : 'NO';
-    await supabase.from('notifications').insert({
-      user_id: exp.sender_id,
-      type: 'response',
-      title: `${exp.receiver_name || 'Your pookie'} said ${respText}!`,
-      body: resp === 'yes' ? 'She said yes!' : resp === 'maybe' ? 'She needs some time.' : 'She said no. Respect her decision.',
-      experience_id: exp.id,
-    });
-
-    if (resp === 'yes') {
-      setTimeout(() => setShowDateSelection(true), 2000);
+    if (exp.sender_id) {
+      const respText = resp === 'yes' ? 'YES 😭❤️' : resp === 'maybe' ? 'MAYBE' : 'NO';
+      await supabase.from('notifications').insert({
+        user_id: exp.sender_id,
+        type: 'response',
+        title: `${exp.receiver_name || 'Your pookie'} said ${respText}!`,
+        body: resp === 'yes' ? 'She said yes!' : resp === 'maybe' ? 'She needs some time.' : 'She said no. Respect her decision.',
+        experience_id: exp.id,
+      });
     }
   };
 
@@ -201,6 +187,13 @@ export default function LoveExperiencePage() {
             experience_id: exp.id,
           });
         }
+
+        setDateConfirmed(true);
+        toast({
+          title: 'Date request sent! ❤️',
+          description: "It's a date! Your response has been sent to him.",
+        });
+        return;
       }
 
       toast({
@@ -210,31 +203,12 @@ export default function LoveExperiencePage() {
       setRedirecting(true);
       setTimeout(() => {
         router.push(profile?.role === 'sender' ? '/sender' : '/receiver');
-      }, 1500);
+      }, 1200);
     } catch {
       router.push(profile?.role === 'sender' ? '/sender' : '/receiver');
     } finally {
       setSubmittingDate(false);
     }
-  };
-
-  const calculateLove = () => {
-    setLoveMeterCalculating(true);
-    const values = [10, 27, 54, 89, 100];
-    let idx = 0;
-    const interval = setInterval(() => {
-      if (idx < values.length) {
-        setLoveMeterValue(values[idx]);
-        idx++;
-      } else {
-        clearInterval(interval);
-        setTimeout(() => {
-          setLoveMeterValue(0);
-          setLoveMeterCalculating(false);
-          setLoveMeterDone(true);
-        }, 500);
-      }
-    }, 400);
   };
 
   const handleHeartClick = () => {
@@ -429,15 +403,6 @@ export default function LoveExperiencePage() {
     );
   }
 
-  const dateOptions = [
-    { key: 'coffee', label: 'Coffee', icon: Coffee },
-    { key: 'dinner', label: 'Dinner', icon: Utensils },
-    { key: 'movie', label: 'Movie', icon: Film },
-    { key: 'walk', label: 'Walk', icon: Moon },
-    { key: 'drive', label: 'Long Drive', icon: Car },
-    { key: 'surprise', label: 'Surprise me', icon: Sparkles },
-  ];
-
   return (
     <div className={`min-h-screen bg-gradient-to-b ${cfg.openedBg} ${cfg.textColor} relative`}>
       {exp?.music_url && <audio ref={audioRef} src={exp.music_url} loop />}
@@ -496,190 +461,545 @@ export default function LoveExperiencePage() {
       {/* Floating Reaction Dock */}
       <FloatingReactions isDark={isDark} />
 
-      {/* Content sections */}
-      <div className="relative z-10">
-        {/* Primary Love / Apology Letter in Realistic Parchment Stationery */}
-        <Section>
+      {/* Content sections: Single Cohesive Flow matching preview.html */}
+      <div className="relative z-10 pt-20 pb-16 px-4 sm:px-8 w-full max-w-3xl mx-auto space-y-12">
+        
+        {/* SECTION 1: The Heartfelt Stationery Letter */}
+        <section>
           <ParchmentLetter
-            title={exp?.apology_message ? 'Things I should have said properly…' : 'A Letter From My Heart…'}
+            badge="To the love of my life"
+            title={exp?.apology_message ? 'Things I Should Have Said Properly…' : 'A Letter From My Heart…'}
             senderName={exp?.sender_name}
             receiverName={exp?.receiver_name}
             content={exp?.apology_message || exp?.love_letter || exp?.final_letter || "I'm sorry. Not the casual sorry yaar kind. The real one. You mean the world to me."}
-            secretNote={exp?.final_letter || "P.S. You mean the world to me. Whatever your answer is, I just want you to smile today. Take all the time you need. ❤️"}
+            secretNote={exp?.final_letter || "P.S. You deserve the sweetest smile today. No matter what, thank you for being the most special part of my life. ❤️"}
+            theme={theme}
             isDark={isDark}
             accentColor={cfg.accent}
           />
-        </Section>
+        </section>
 
-        {/* Funny Boyfriend Court */}
-        <Section>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-            <p className={`font-handwritten text-2xl sm:text-3xl ${cfg.subColor} mb-2 text-center`}>A completely unbiased investigation…</p>
-            <h2 className={`font-serif-display text-3xl sm:text-4xl md:text-5xl font-bold mb-8 text-center tracking-tight ${cfg.titleColor}`}>
-              THE PEOPLE VS. {exp?.sender_name?.toUpperCase() || '[SENDER]'}
-            </h2>
-            <div className={`rounded-3xl p-6 md:p-8 max-w-xl mx-auto shadow-xl border ${
-              isDark ? 'bg-[#181126]/90 border-purple-400/30' : 'bg-white/90 border-rose-100'
-            }`}>
-              <p className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: cfg.accent }}>CHARGES:</p>
-              <div className="space-y-2 mb-6">
-                {['Being stupid', 'Saying the wrong thing', 'Making pookie angry', 'Having zero brain cells'].map((charge, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className={`flex items-center justify-between py-2 border-b ${isDark ? 'border-purple-500/20' : 'border-rose-100'}`}
-                  >
-                    <span className="text-base sm:text-lg">{charge}</span>
-                    <span className="text-xl sm:text-2xl">✅</span>
-                  </motion.div>
-                ))}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.5 }}
-                  className="flex items-center justify-between py-2"
-                >
-                  <span className="text-base sm:text-lg font-semibold">Loving pookie 1000%</span>
-                  <span className="text-xl sm:text-2xl">❤️</span>
-                </motion.div>
-              </div>
-              <div className="text-center space-y-2 pt-2 border-t border-rose-200/30">
-                <p className="text-2xl font-bold" style={{ color: cfg.accent }}>VERDICT: GUILTY.</p>
-                <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: cfg.accent }}>PUNISHMENT:</p>
-                <div className={`space-y-1.5 text-sm sm:text-base ${isDark ? 'text-purple-200/90' : 'text-slate-700'}`}>
-                  <p>Must apologize properly</p>
-                  <p>Must bring snacks 🍫</p>
-                  <p>Must listen without arguing</p>
-                  <p>Must give unlimited hugs <span className="text-xs italic">(if she wants them)</span></p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </Section>
+        {/* SECTION 2: Our Favorite Memories 📸 */}
+        <section>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold text-center mb-6 tracking-tight ${cfg.titleColor}`}>
+              Our Favorite Memories 📸
+            </h3>
 
-        {/* Memory Timeline */}
-        {memories.length > 0 && (
-          <Section>
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-              <p className={`font-handwritten text-2xl sm:text-3xl ${cfg.subColor} mb-2`}>But then I remembered something…</p>
-              <h2 className={`font-serif-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3 tracking-tight ${cfg.titleColor}`}>
-                Before this stupid little fight,
-              </h2>
-              <p className={`font-body text-base sm:text-lg ${cfg.subColor} mb-12`}>there was an entire story called us.</p>
-              <div className="max-w-2xl mx-auto space-y-8">
-                {memories.map((mem, i) => (
-                  <motion.div
-                    key={mem.id}
-                    initial={{ opacity: 0, y: 50, rotate: i % 2 === 0 ? -3 : 3 }}
-                    whileInView={{ opacity: 1, y: 0, rotate: i % 2 === 0 ? -2 : 2 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    whileHover={{ scale: 1.03, rotate: 0 }}
-                    onDoubleClick={() => {
-                      setEasterEgg('Certified couple moment ❤️');
-                      setTimeout(() => setEasterEgg(null), 3000);
-                    }}
-                    className="relative bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/60 mx-auto max-w-sm text-left"
-                  >
-                    {/* Tape sticker */}
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-6 bg-rose-200/60 rounded-sm rotate-2" />
-                    {mem.media_url && (
-                      <div className="w-full h-48 rounded-xl overflow-hidden mb-3 bg-rose-50">
-                        {mem.media_type === 'video' || isVideoUrl(mem.media_url) ? (
-                          <video src={mem.media_url} controls playsInline preload="metadata" className="w-full h-full object-cover" />
-                        ) : (
-                          <img src={mem.media_url} alt={mem.title} className="w-full h-full object-cover" loading="lazy" />
-                        )}
-                      </div>
-                    )}
-                    <h3 className="font-serif-display text-lg font-bold text-rose-900 mb-1">{mem.title}</h3>
-                    {mem.date && <p className="text-xs text-rose-400 font-mono">{mem.date}{mem.location ? ` · ${mem.location}` : ''}</p>}
-                    {mem.caption && <p className="font-handwritten text-lg text-rose-600 mt-2">{mem.caption}</p>}
-                    <div className="absolute bottom-2 right-2 text-rose-300/40">
-                      <Heart className="w-4 h-4" />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </Section>
-        )}
-
-        {/* Gallery */}
-        {gallery.length > 0 && (
-          <Section>
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-              <h2 className={`font-serif-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3 tracking-tight ${cfg.titleColor}`}>
-                Evidence that we are actually cute together.
-              </h2>
-              <p className={`font-body text-sm sm:text-base ${cfg.subColor} mb-8`}>Click any photo to see it bigger.</p>
-
-              <div className="columns-2 md:columns-3 gap-4 max-w-4xl mx-auto">
-                {gallery.map((item, i) => {
-                  const isVideo = item.media_type === 'video' || isVideoUrl(item.media_url);
+            {/* If sender uploaded custom memories, display them */}
+            {memories.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {memories.map((mem, i) => {
+                  const isVid = mem.media_url ? isVideoUrl(mem.media_url) : false;
                   return (
                     <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: (i % 6) * 0.05 }}
-                      className="mb-4 break-inside-avoid cursor-pointer group relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
-                      onClick={() => setLightboxIdx(i)}
+                      key={mem.id || i}
+                      whileHover={{ scale: 1.04, rotate: 0 }}
+                      className={`bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transition-all text-left relative cursor-pointer ${
+                        i % 3 === 0 ? 'transform -rotate-1' : i % 3 === 1 ? 'transform rotate-2' : 'transform -rotate-2'
+                      }`}
+                      onClick={() => {
+                        if (mem.media_url) setLightboxIdx(i);
+                      }}
                     >
-                      {item.media_url ? (
-                        isVideo ? (
-                          <div className="relative w-full rounded-xl overflow-hidden bg-black/10">
-                            <video
-                              src={item.media_url}
-                              playsInline
-                              muted
-                              preload="metadata"
-                              className="w-full rounded-xl object-cover max-h-72 group-hover:scale-105 transition duration-300"
-                            />
-                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 pointer-events-none">
-                              <Film className="w-3 h-3 text-rose-300" />
-                              <span>Snap</span>
-                            </div>
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition flex items-center justify-center pointer-events-none">
-                              <div className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-lg group-hover:scale-110 transition">
-                                <Play className="w-4 h-4 text-rose-500 fill-rose-500 ml-0.5" />
-                              </div>
-                            </div>
-                          </div>
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-rose-200/60 rounded-xs rotate-2 pointer-events-none" />
+                      <div className="w-full h-36 rounded-xl overflow-hidden mb-3 bg-rose-50 flex items-center justify-center">
+                        {mem.media_url ? (
+                          isVid ? (
+                            <video src={mem.media_url} playsInline preload="metadata" className="w-full h-full object-cover" />
+                          ) : (
+                            <img src={mem.media_url} alt={mem.title} className="w-full h-full object-cover" loading="lazy" />
+                          )
                         ) : (
-                          <img
-                            src={item.media_url}
-                            alt={item.caption || 'Memory photo'}
-                            loading="lazy"
-                            className="w-full rounded-xl object-cover group-hover:opacity-95 group-hover:scale-105 transition duration-300"
-                          />
-                        )
-                      ) : (
-                        <div className="w-full h-32 rounded-xl bg-rose-100 flex items-center justify-center">
-                          <Heart className="w-8 h-8 text-rose-300" />
-                        </div>
-                      )}
-                      {item.caption && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3">
-                          <p className="font-handwritten text-white text-base sm:text-lg drop-shadow">{item.caption}</p>
-                        </div>
+                          <span className="text-3xl">{i === 0 ? '☕' : i === 1 ? '⛰️' : '🍕'}</span>
+                        )}
+                      </div>
+                      <h4 className="font-bold text-sm text-rose-950 mb-0.5">{mem.title}</h4>
+                      {mem.date && <p className="text-[11px] text-rose-400 font-mono mb-1">{mem.date}{mem.location ? ` · ${mem.location}` : ''}</p>}
+                      {mem.caption && (
+                        <p className="font-script text-base text-rose-600 leading-snug">
+                          {mem.caption}
+                        </p>
                       )}
                     </motion.div>
                   );
                 })}
               </div>
-            </motion.div>
-          </Section>
-        )}
+            ) : (
+              /* Fallback default memories matching preview.html */
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <motion.div
+                  whileHover={{ scale: 1.04, rotate: 0 }}
+                  className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-1 transition-all text-left relative"
+                >
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-rose-200/60 rounded-xs rotate-2 pointer-events-none" />
+                  <div className="h-32 sm:h-36 bg-rose-100/70 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                    ☕
+                  </div>
+                  <p className="font-bold text-sm text-rose-950 mb-0.5">The First Date</p>
+                  <p className="font-script text-base text-rose-600 leading-snug">
+                    Spilled coffee & still got your number
+                  </p>
+                </motion.div>
 
-        {/* Lightbox */}
+                <motion.div
+                  whileHover={{ scale: 1.04, rotate: 0 }}
+                  className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform rotate-2 transition-all text-left relative"
+                >
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-purple-200/60 rounded-xs -rotate-2 pointer-events-none" />
+                  <div className="h-32 sm:h-36 bg-purple-100/70 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                    ⛰️
+                  </div>
+                  <p className="font-bold text-sm text-rose-950 mb-0.5">Mountain Trip</p>
+                  <p className="font-script text-base text-rose-600 leading-snug">
+                    You made me take 400 photos & I loved it
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.04, rotate: 0 }}
+                  className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-2 transition-all text-left relative"
+                >
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-amber-200/60 rounded-xs rotate-1 pointer-events-none" />
+                  <div className="h-32 sm:h-36 bg-amber-100/70 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                    🍕
+                  </div>
+                  <p className="font-bold text-sm text-rose-950 mb-0.5">Pizza Disaster</p>
+                  <p className="font-script text-base text-rose-600 leading-snug">
+                    Burned pasta, best pizza ever
+                  </p>
+                </motion.div>
+              </div>
+            )}
+          </motion.div>
+        </section>
+
+        {/* SECTION 3: The Invitation & Inline Date Picker */}
+        <section>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className={`rounded-3xl p-6 sm:p-10 text-center border shadow-2xl transition-all relative ${cfg.cardBg}`}
+          >
+            <h3 className={`font-serif-display text-3xl sm:text-4xl font-bold mb-2 tracking-tight ${cfg.titleColor}`}>
+              Can I take you out?
+            </h3>
+            <p className={`text-sm opacity-80 mb-6 font-script text-2xl ${cfg.subColor}`}>
+              Coffee? Dinner? A walk? You choose.
+            </p>
+
+            {/* 3 Response Choice Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto mb-6">
+              <button
+                type="button"
+                onClick={() => handleResponse('yes')}
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-base shadow-lg transition-all transform hover:scale-[1.02] ${
+                  response === 'yes'
+                    ? 'bg-rose-500 text-white ring-2 ring-rose-400 ring-offset-2'
+                    : 'bg-rose-500 hover:bg-rose-600 text-white'
+                }`}
+              >
+                ❤️ YES
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResponse('maybe')}
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-base shadow-lg transition-all transform hover:scale-[1.02] ${
+                  response === 'maybe'
+                    ? 'bg-amber-500 text-white ring-2 ring-amber-400 ring-offset-2'
+                    : 'bg-amber-500/90 hover:bg-amber-500 text-white'
+                }`}
+              >
+                🥺 MAYBE
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResponse('no')}
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-base border shadow-sm transition-all transform hover:scale-[1.02] ${
+                  response === 'no'
+                    ? 'bg-slate-700 text-white ring-2 ring-slate-400 ring-offset-2'
+                    : isDark
+                    ? 'bg-slate-800/80 hover:bg-slate-800 text-slate-200 border-slate-700'
+                    : 'bg-white/80 hover:bg-white text-slate-700 border-slate-200'
+                }`}
+              >
+                🤍 NO
+              </button>
+            </div>
+
+            {/* INLINE EXPANSION: On YES */}
+            <AnimatePresence>
+              {response === 'yes' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="overflow-hidden"
+                >
+                  <div className={`mt-4 p-5 sm:p-6 rounded-2xl border text-left ${
+                    isDark
+                      ? 'bg-purple-950/60 border-purple-400/30 text-white'
+                      : 'bg-rose-50/70 border-rose-200/80 text-slate-800'
+                  }`}>
+                    {dateConfirmed ? (
+                      <div className="text-center py-4">
+                        <div className="text-4xl mb-2">🎉🥂✨</div>
+                        <h4 className="font-serif-display text-2xl font-bold text-rose-500 mb-1">
+                          It&apos;s a Date!
+                        </h4>
+                        <p className={`text-sm mb-4 ${isDark ? 'text-purple-200' : 'text-slate-600'}`}>
+                          Your date response has been sent to him!{' '}
+                          {selectedActivity && (
+                            <span className="font-bold text-rose-500 block mt-1">
+                              Activity: {formatCustomDateIdea(selectedActivity).emoji} {formatCustomDateIdea(selectedActivity).label}
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                          <Link
+                            href={profile?.role === 'sender' ? '/sender' : '/receiver'}
+                            className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow transition inline-flex items-center justify-center gap-1.5"
+                          >
+                            <span>Go to Dashboard</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                          {profile?.role === 'receiver' && (
+                            <Link
+                              href="/receiver/messages"
+                              className="px-5 py-2.5 rounded-xl bg-white text-rose-600 hover:bg-rose-50 text-xs font-semibold border border-rose-200 shadow-xs transition inline-flex items-center justify-center gap-1.5"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>Open Private Chat</span>
+                            </Link>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setDateConfirmed(false)}
+                            className="px-4 py-2 rounded-xl text-xs text-rose-400 hover:underline"
+                          >
+                            Change Date
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xs font-bold uppercase tracking-wider opacity-80 flex items-center gap-1.5">
+                            <span>🥂</span>
+                            <span>Pick Our Date Activity</span>
+                          </p>
+                          <span className="text-[11px] font-script text-rose-500 text-lg">
+                            She said yes! ❤️
+                          </span>
+                        </div>
+
+                        {/* Category Filter Pills */}
+                        <div className="flex gap-1 overflow-x-auto pb-2 mb-3 scrollbar-hide">
+                          <button
+                            type="button"
+                            onClick={() => setDateCategory('all')}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                              dateCategory === 'all'
+                                ? 'bg-rose-500 text-white shadow-xs'
+                                : isDark
+                                ? 'bg-white/10 text-purple-200 hover:bg-white/20'
+                                : 'bg-white text-rose-600 hover:bg-rose-100 border border-rose-200/60'
+                            }`}
+                          >
+                            🌟 All
+                          </button>
+                          {Object.entries(DATE_CATEGORIES).map(([catKey, cat]) => (
+                            <button
+                              type="button"
+                              key={catKey}
+                              onClick={() => setDateCategory(catKey)}
+                              className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                                dateCategory === catKey
+                                  ? 'bg-rose-500 text-white shadow-xs'
+                                  : isDark
+                                  ? 'bg-white/10 text-purple-200 hover:bg-white/20'
+                                  : 'bg-white text-rose-600 hover:bg-rose-100 border border-rose-200/60'
+                              }`}
+                            >
+                              {cat.emoji} {cat.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Date Ideas Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                          {(() => {
+                            const offeredKeys = exp?.date_options || [];
+                            const pool = PRESET_DATE_IDEAS.filter(
+                              (p) => dateCategory === 'all' || p.category === dateCategory
+                            );
+                            const customOffered = dateCategory === 'all'
+                              ? offeredKeys.filter((k) => !PRESET_DATE_IDEAS.some((p) => p.key === k))
+                              : [];
+
+                            return (
+                              <>
+                                {customOffered.map((cOpt) => {
+                                  const info = formatCustomDateIdea(cOpt);
+                                  const isSelected = selectedActivity === cOpt;
+                                  return (
+                                    <button
+                                      key={cOpt}
+                                      type="button"
+                                      onClick={() => setSelectedActivity(cOpt)}
+                                      className={`p-2.5 rounded-xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1 border ${
+                                        isSelected
+                                          ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-[1.03]'
+                                          : isDark
+                                          ? 'bg-white/5 text-purple-100 hover:bg-white/10 border-purple-400/20'
+                                          : 'bg-white text-slate-700 hover:bg-rose-100/60 border-rose-200/80'
+                                      }`}
+                                    >
+                                      <span className="text-lg">{info.emoji}</span>
+                                      <span className="leading-tight">{info.label}</span>
+                                    </button>
+                                  );
+                                })}
+                                {pool.map((item) => {
+                                  const isSelected = selectedActivity === item.key;
+                                  const isOfferedBySender = offeredKeys.includes(item.key);
+                                  return (
+                                    <button
+                                      key={item.key}
+                                      type="button"
+                                      onClick={() => setSelectedActivity(item.key)}
+                                      className={`p-2.5 rounded-xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1 border relative ${
+                                        isSelected
+                                          ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-[1.03]'
+                                          : isOfferedBySender
+                                          ? 'bg-rose-50 text-rose-800 border-rose-300 ring-1 ring-rose-200'
+                                          : isDark
+                                          ? 'bg-white/5 text-purple-100 hover:bg-white/10 border-purple-400/20'
+                                          : 'bg-white text-slate-700 hover:bg-rose-100/60 border-rose-200/80'
+                                      }`}
+                                    >
+                                      {isOfferedBySender && (
+                                        <span className="absolute top-1 right-1 text-[8px] font-bold px-1 py-0.2 rounded-full bg-rose-100 text-rose-600 uppercase">
+                                          His Pick
+                                        </span>
+                                      )}
+                                      <span className="text-lg">{item.emoji}</span>
+                                      <span className="leading-tight">{item.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Custom Date Input */}
+                        <div className="mb-4 pt-2 border-t border-black/10 dark:border-white/10">
+                          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1 opacity-75">
+                            Or Suggest Your Own Date Idea ✨
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              value={customDateInput}
+                              onChange={(e) => setCustomDateInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (customDateInput.trim()) {
+                                    setSelectedActivity(customDateInput.trim());
+                                    setCustomDateInput('');
+                                  }
+                                }
+                              }}
+                              placeholder="e.g. Stargazing on the roof 🔭, Baking together 🍪"
+                              className={`flex-1 px-3 py-2 rounded-xl text-xs outline-none border focus:ring-2 focus:ring-rose-400 ${
+                                isDark
+                                  ? 'bg-white/10 border-white/20 text-white placeholder-white/40'
+                                  : 'bg-white border-rose-200 text-slate-800 placeholder-slate-400'
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (customDateInput.trim()) {
+                                  setSelectedActivity(customDateInput.trim());
+                                  setCustomDateInput('');
+                                }
+                              }}
+                              disabled={!customDateInput.trim()}
+                              className="px-3.5 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold disabled:opacity-40 transition"
+                            >
+                              Pick
+                            </button>
+                          </div>
+                        </div>
+
+                        {selectedActivity && (
+                          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-400/30">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <p className="text-xs font-semibold text-rose-500">
+                                Chosen Date: <span className="font-bold">{formatCustomDateIdea(selectedActivity).emoji} {formatCustomDateIdea(selectedActivity).label}</span>
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedActivity(null)}
+                                className="text-[11px] text-rose-400 hover:underline"
+                              >
+                                Clear
+                              </button>
+                            </div>
+                            <textarea
+                              value={dateNote}
+                              onChange={(e) => setDateNote(e.target.value)}
+                              placeholder="Add a sweet note for him (optional)..."
+                              rows={2}
+                              className={`w-full px-3 py-1.5 rounded-xl text-xs outline-none border resize-none focus:ring-2 focus:ring-rose-400 ${
+                                isDark ? 'bg-white/10 border-white/20 text-white placeholder-white/40' : 'bg-white border-rose-200 text-slate-800'
+                              }`}
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleDateSubmit(false)}
+                            disabled={submittingDate || !selectedActivity}
+                            className="flex-1 py-2.5 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow transition disabled:opacity-40 flex items-center justify-center gap-1.5"
+                          >
+                            {submittingDate ? (
+                              <span>Saving Date Request...</span>
+                            ) : (
+                              <span>Confirm Date Request ❤️</span>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setResponse(null)}
+                            className={`py-2.5 px-3.5 rounded-xl text-xs font-semibold border transition ${
+                              isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            Back
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* INLINE EXPANSION: On MAYBE */}
+              {response === 'maybe' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="overflow-hidden"
+                >
+                  <div className={`mt-4 p-5 sm:p-6 rounded-2xl border text-left ${
+                    isDark
+                      ? 'bg-amber-950/50 border-amber-400/30 text-white'
+                      : 'bg-amber-50/80 border-amber-200 text-slate-800'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">🥺❤️</span>
+                      <h4 className="font-serif-display text-xl font-bold text-amber-500">
+                        That&apos;s completely okay
+                      </h4>
+                    </div>
+                    <p className={`text-xs sm:text-sm mb-3 leading-relaxed ${isDark ? 'text-amber-200/90' : 'text-slate-600'}`}>
+                      Take all the time you need, pookie. There is zero pressure. You don&apos;t have to decide right now.
+                    </p>
+                    <textarea
+                      value={dateNote}
+                      onChange={(e) => setDateNote(e.target.value)}
+                      placeholder="Leave a reassuring note for him (optional)..."
+                      rows={2}
+                      className={`w-full px-3 py-2 rounded-xl text-xs outline-none border resize-none mb-3 focus:ring-2 focus:ring-amber-400 ${
+                        isDark ? 'bg-white/10 border-white/20 text-white placeholder-white/40' : 'bg-white border-amber-200 text-slate-800'
+                      }`}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (dateNote && exp) {
+                            await supabase.from('responses').insert({
+                              experience_id: exp.id,
+                              response: 'maybe',
+                              note: dateNote,
+                            });
+                          }
+                          toast({ title: 'Note saved ❤️', description: 'Thank you for your honesty.' });
+                        }}
+                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow transition"
+                      >
+                        Save Note
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setResponse(null)}
+                        className="px-4 py-2 rounded-xl text-xs font-semibold border border-amber-300 text-amber-600 hover:bg-amber-100 transition"
+                      >
+                        Change Response
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* INLINE EXPANSION: On NO */}
+              {response === 'no' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="overflow-hidden"
+                >
+                  <div className={`mt-4 p-5 sm:p-6 rounded-2xl border text-left ${
+                    isDark
+                      ? 'bg-slate-900/60 border-slate-700 text-white'
+                      : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">🤍</span>
+                      <h4 className="font-serif-display text-xl font-bold text-slate-400">
+                        I understand completely
+                      </h4>
+                    </div>
+                    <p className={`text-xs sm:text-sm mb-4 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                      Thank you for reading everything. I genuinely mean the apology and wanted to make you smile. Take care of yourself.
+                    </p>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setResponse(null)}
+                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-700 hover:bg-slate-800 text-white shadow transition"
+                      >
+                        Change Response
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </section>
+
+        {/* Lightbox Viewer (when clicked on any memory with photo/video) */}
         <AnimatePresence>
-          {lightboxIdx !== null && gallery[lightboxIdx] && (
+          {lightboxIdx !== null && memories[lightboxIdx] && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -694,553 +1014,32 @@ export default function LoveExperiencePage() {
               >
                 <X className="w-6 h-6" />
               </button>
-              {gallery[lightboxIdx].media_type === 'video' || isVideoUrl(gallery[lightboxIdx].media_url) ? (
-                <video
-                  src={gallery[lightboxIdx].media_url}
-                  controls
-                  autoPlay
-                  playsInline
-                  className="max-w-full max-h-[80vh] rounded-xl shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              ) : (
-                <motion.img
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  src={gallery[lightboxIdx].media_url}
-                  alt={gallery[lightboxIdx].caption}
-                  className="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                />
+              {memories[lightboxIdx].media_url && (
+                isVideoUrl(memories[lightboxIdx].media_url!) ? (
+                  <video
+                    src={memories[lightboxIdx].media_url!}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="max-w-full max-h-[80vh] rounded-xl shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <motion.img
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    src={memories[lightboxIdx].media_url!}
+                    alt={memories[lightboxIdx].title}
+                    className="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )
               )}
-              {gallery[lightboxIdx].caption && (
-                <p className="absolute bottom-6 left-1/2 -translate-x-1/2 font-handwritten text-white text-lg sm:text-xl text-center px-4 py-1.5 bg-black/50 backdrop-blur-md rounded-full max-w-[90vw]">
-                  {gallery[lightboxIdx].caption}
+              {memories[lightboxIdx].caption && (
+                <p className="absolute bottom-6 left-1/2 -translate-x-1/2 font-script text-white text-lg sm:text-xl text-center px-4 py-1.5 bg-black/50 backdrop-blur-md rounded-full max-w-[90vw]">
+                  {memories[lightboxIdx].caption}
                 </p>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Funny Moments */}
-        {funnyMoments.length > 0 && (
-          <Section>
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-              <h2 className={`font-serif-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3 tracking-tight ${cfg.titleColor}`}>
-                Our shared brain cell collection 🧠❤️
-              </h2>
-              <p className={`font-body text-sm sm:text-base ${cfg.subColor} mb-8`}>Inside jokes that only we get.</p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-                {funnyMoments.map((f, i) => (
-                  <motion.div
-                    key={f.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className={`rounded-2xl p-5 border text-left shadow-md transition-all ${
-                      isDark
-                        ? 'bg-[#181126]/90 border-purple-400/30 text-white'
-                        : 'bg-white/90 border-rose-100 text-slate-800'
-                    }`}
-                  >
-                    {f.image_url && (
-                      isVideoUrl(f.image_url) ? (
-                        <video
-                          src={f.image_url}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="w-full h-44 rounded-xl object-cover mb-3"
-                        />
-                      ) : (
-                        <img src={f.image_url} alt={f.title} className="w-full h-36 rounded-xl object-cover mb-3" loading="lazy" />
-                      )
-                    )}
-                    <h3 className={`font-serif-display text-lg font-bold mb-1 ${isDark ? 'text-purple-200' : 'text-rose-900'}`}>{f.title}</h3>
-                    <p className={`text-sm ${isDark ? 'text-purple-100/80' : 'text-slate-600'}`}>{f.description}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </Section>
-        )}
-
-        {/* Things I Love About You */}
-        {loveReasons.length > 0 && (
-          <Section>
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-              <p className={`font-handwritten text-2xl sm:text-3xl ${cfg.subColor} mb-2`}>Since we're here…</p>
-              <h2 className={`font-serif-display text-3xl sm:text-4xl md:text-5xl font-bold mb-8 tracking-tight ${cfg.titleColor}`}>
-                Let me remind you.
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-                {loveReasons.map((r, i) => (
-                  <motion.div
-                    key={r.id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.08 }}
-                    whileHover={{ y: -4 }}
-                    className={`rounded-2xl p-5 text-left relative border shadow-md transition-all ${
-                      isDark
-                        ? 'bg-[#181126]/90 border-purple-400/30 text-white'
-                        : 'bg-white/90 border-rose-100 text-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className={`font-serif-display text-lg font-bold ${isDark ? 'text-purple-200' : 'text-rose-900'}`}>{r.title}</h3>
-                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    </div>
-                    {r.image_url && (
-                      isVideoUrl(r.image_url) ? (
-                        <video
-                          src={r.image_url}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="w-full h-36 rounded-xl object-cover mb-3"
-                        />
-                      ) : (
-                        <img
-                          src={r.image_url}
-                          alt={r.title}
-                          className="w-full h-36 rounded-xl object-cover mb-3"
-                          loading="lazy"
-                        />
-                      )
-                    )}
-                    <p className={`text-sm ${isDark ? 'text-purple-100/80' : 'text-slate-600'} leading-relaxed`}>{r.description}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </Section>
-        )}
-
-        {/* Love Meter */}
-        <Section>
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-            <h2 className={`font-serif-display text-3xl sm:text-4xl md:text-5xl font-bold mb-8 tracking-tight ${cfg.titleColor}`}>
-              How much do I love you?
-            </h2>
-            <div className={`rounded-3xl p-6 sm:p-8 max-w-md mx-auto border shadow-xl ${
-              isDark ? 'bg-[#181126]/90 border-purple-400/30' : 'bg-white/90 border-rose-100'
-            }`}>
-              {!loveMeterDone ? (
-                <>
-                  <div className="text-5xl sm:text-6xl font-bold mb-4 font-serif-display text-rose-500">
-                    {loveMeterValue}% ❤️
-                  </div>
-                  <div className="w-full h-3.5 bg-rose-100/50 rounded-full overflow-hidden mb-5">
-                    <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-rose-500 to-pink-500"
-                      animate={{ width: `${loveMeterValue}%` }}
-                    />
-                  </div>
-                  {!loveMeterCalculating && loveMeterValue === 0 && (
-                    <button
-                      onClick={calculateLove}
-                      className="px-6 py-2.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-xs shadow-md hover:shadow-lg transition"
-                    >
-                      Calculate My Love ✨
-                    </button>
-                  )}
-                  {loveMeterCalculating && (
-                    <p className="text-xs text-rose-400 animate-pulse font-medium">Calculating infinite love…</p>
-                  )}
-                </>
-              ) : (
-                <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
-                  <motion.p
-                    animate={{ x: [0, -2, 2, 0] }}
-                    transition={{ duration: 0.3, repeat: 3 }}
-                    className="text-sm font-bold text-rose-500 mb-1"
-                  >
-                    LOVE LIMIT EXCEEDED
-                  </motion.p>
-                  <p className="text-lg font-serif-display font-semibold mb-3" style={{ color: cfg.accent }}>
-                    Cannot be measured in numbers.
-                  </p>
-                  <motion.p
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.5, type: 'spring' }}
-                    className="text-6xl font-bold font-serif-display text-rose-500"
-                  >
-                    ∞ ❤️
-                  </motion.p>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
-        </Section>
-
-        {/* Mini Game */}
-        <Section>
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-            <h2 className={`font-serif-display text-2xl sm:text-3xl font-bold mb-4 ${cfg.titleColor}`}>
-              Quick question…
-            </h2>
-            <p className={`text-base sm:text-lg ${cfg.subColor} mb-6`}>Who is the cutest person in this relationship?</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-              {[
-                { label: 'Me 😎', value: 'me' },
-                { label: 'You 🥺', value: 'you' },
-                { label: 'Obviously you 🙄❤️', value: 'obviously-you' },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setGameAnswer(opt.value)}
-                  className={`px-5 py-3 rounded-xl font-medium transition-all ${
-                    gameAnswer === opt.value
-                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg'
-                      : isDark
-                        ? 'bg-[#181126]/80 text-purple-200 border border-purple-500/20 hover:bg-[#181126]'
-                        : 'bg-white/80 text-slate-700 border border-rose-200 hover:bg-white'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <AnimatePresence>
-              {gameAnswer && gameAnswer !== 'obviously-you' && (
-                <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 text-lg font-handwritten" style={{ color: cfg.accent }}>
-                  Incorrect answer 😂
-                </motion.p>
-              )}
-              {gameAnswer === 'obviously-you' && (
-                <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 text-lg font-handwritten" style={{ color: cfg.accent }}>
-                  Correct! ❤️
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </Section>
-
-        {/* Final Invitation */}
-        {!response && (
-          <Section>
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="text-center">
-              <h2 className={`font-serif-display text-3xl sm:text-5xl font-bold mb-4 tracking-tight ${cfg.titleColor}`}>
-                So… can I ask you one tiny thing?
-              </h2>
-              <p className="font-handwritten text-3xl mb-2" style={{ color: cfg.accent }}>Can I take you out?</p>
-              <p className={`font-body text-sm ${cfg.subColor} mb-10`}>Coffee? Dinner? A walk? You choose.</p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto">
-                <button
-                  onClick={() => handleResponse('yes')}
-                  className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-rose-400 to-pink-400 text-white font-bold text-lg hover:shadow-xl hover:shadow-rose-300/40 transition-all hover:scale-105"
-                >
-                  ❤️ YES
-                  <p className="text-xs font-normal mt-1 opacity-80">Okay, let's go.</p>
-                </button>
-                <button
-                  onClick={() => handleResponse('maybe')}
-                  className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-amber-300 to-orange-300 text-white font-bold text-lg hover:shadow-xl hover:shadow-amber-300/40 transition-all hover:scale-105"
-                >
-                  🥺 MAYBE
-                  <p className="text-xs font-normal mt-1 opacity-80">I need a little time.</p>
-                </button>
-                <button
-                  onClick={() => handleResponse('no')}
-                  className="flex-1 py-4 rounded-2xl bg-white/60 border border-rose-200 text-rose-600 font-bold text-lg hover:shadow-lg transition-all hover:scale-105"
-                >
-                  🤍 NO
-                  <p className="text-xs font-normal mt-1 opacity-60">Not right now.</p>
-                </button>
-              </div>
-
-              {/* Direct link to dashboard after reading */}
-              {user && (
-                <div className="mt-8">
-                  <button
-                    onClick={() => router.push(profile?.role === 'sender' ? '/sender' : '/receiver')}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/80 hover:bg-white text-rose-600 font-medium text-xs shadow-sm border border-rose-200/50 backdrop-blur-sm transition hover:scale-105"
-                  >
-                    <span>Done reading? Return to Dashboard</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          </Section>
-        )}
-
-        {/* Response screens */}
-        <AnimatePresence>
-          {response === 'yes' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-rose-100/95 to-lavender-100/95 backdrop-blur-md p-4 overflow-y-auto"
-            >
-              {/* Confetti hearts */}
-              {!reduceMotion && [...Array(30)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute pointer-events-none"
-                  initial={{ y: -100, x: `${Math.random() * 100}%`, rotate: 0, opacity: 1 }}
-                  animate={{ y: '100vh', rotate: 360, opacity: [1, 1, 0] }}
-                  transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2 }}
-                >
-                  {i % 3 === 0 ? <Heart className="w-6 h-6 fill-rose-400 text-rose-400" /> :
-                   i % 3 === 1 ? <Sparkles className="w-5 h-5 text-amber-400" /> :
-                   <Star className="w-5 h-5 fill-amber-300 text-amber-300" />}
-                </motion.div>
-              ))}
-              <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center max-w-md w-full relative z-10 py-6">
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-rose-600 mb-2">
-                  SHE SAID YES 😭❤️
-                </h1>
-                <p className="text-rose-400 text-sm mb-4">The best answer ever.</p>
-
-                {showDateSelection ? (
-                  <div className="glass rounded-3xl p-5 sm:p-6 shadow-2xl border border-rose-100/80 bg-white/95 max-h-[85vh] overflow-y-auto">
-                    <h3 className="font-display text-xl sm:text-2xl font-bold text-rose-700 mb-1">Our Next Date? 🥂</h3>
-                    <p className="text-xs text-rose-400/80 mb-4">Pick an activity, suggest your own special date, or continue to dashboard.</p>
-
-                    {/* Category Filter Pills */}
-                    <div className="flex gap-1 overflow-x-auto pb-2 mb-3 scrollbar-hide">
-                      <button
-                        type="button"
-                        onClick={() => setDateCategory('all')}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
-                          dateCategory === 'all'
-                            ? 'bg-rose-500 text-white shadow-xs'
-                            : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/60'
-                        }`}
-                      >
-                        🌟 All
-                      </button>
-                      {Object.entries(DATE_CATEGORIES).map(([catKey, cat]) => (
-                        <button
-                          type="button"
-                          key={catKey}
-                          onClick={() => setDateCategory(catKey)}
-                          className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
-                            dateCategory === catKey
-                              ? 'bg-rose-500 text-white shadow-xs'
-                              : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/60'
-                          }`}
-                        >
-                          {cat.emoji} {cat.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Date Ideas Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-                      {(() => {
-                        // Options prioritized: sender's offered options + preset catalog
-                        const offeredKeys = exp?.date_options || [];
-                        const pool = PRESET_DATE_IDEAS.filter(
-                          (p) => dateCategory === 'all' || p.category === dateCategory
-                        );
-
-                        // If all category, also prepend any custom non-preset options offered by sender
-                        const customOffered = dateCategory === 'all'
-                          ? offeredKeys.filter((k) => !PRESET_DATE_IDEAS.some((p) => p.key === k))
-                          : [];
-
-                        return (
-                          <>
-                            {customOffered.map((cOpt) => {
-                              const info = formatCustomDateIdea(cOpt);
-                              const isSelected = selectedActivity === cOpt;
-                              return (
-                                <button
-                                  key={cOpt}
-                                  type="button"
-                                  onClick={() => setSelectedActivity(cOpt)}
-                                  className={`p-2.5 rounded-2xl transition-all border text-left flex flex-col justify-between ${
-                                    isSelected
-                                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md border-transparent scale-[1.03]'
-                                      : 'bg-rose-50/70 text-rose-700 hover:bg-rose-100/80 border-rose-200'
-                                  }`}
-                                >
-                                  <span className="text-xl mb-1">{info.emoji}</span>
-                                  <span className="text-xs font-semibold leading-tight">{info.label}</span>
-                                </button>
-                              );
-                            })}
-                            {pool.map((opt) => {
-                              const isSelected = selectedActivity === opt.key;
-                              const isOfferedBySender = offeredKeys.includes(opt.key);
-                              return (
-                                <button
-                                  key={opt.key}
-                                  type="button"
-                                  onClick={() => setSelectedActivity(opt.key)}
-                                  className={`p-2.5 rounded-2xl transition-all border text-left flex flex-col justify-between relative ${
-                                    isSelected
-                                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md border-transparent scale-[1.03]'
-                                      : isOfferedBySender
-                                      ? 'bg-white text-rose-800 hover:bg-rose-50 border-rose-300 ring-1 ring-rose-200'
-                                      : 'bg-white/80 text-rose-600 hover:bg-rose-50 border-rose-100'
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between w-full mb-1">
-                                    <span className="text-xl">{opt.emoji}</span>
-                                    {isOfferedBySender && (
-                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600 uppercase">
-                                        His Pick
-                                      </span>
-                                    )}
-                                  </div>
-                                  <span className="text-xs font-semibold leading-tight">{opt.label}</span>
-                                </button>
-                              );
-                            })}
-                          </>
-                        );
-                      })()}
-                    </div>
-
-                    {/* Suggest Our Own Custom Date Idea */}
-                    <div className="mb-4 pt-3 border-t border-rose-100/80">
-                      <label className="text-xs font-bold text-rose-600 uppercase tracking-wider block mb-1.5 text-left">
-                        Or Suggest Your Own Date Idea ✨
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          value={customDateInput}
-                          onChange={(e) => setCustomDateInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (customDateInput.trim()) {
-                                setSelectedActivity(customDateInput.trim());
-                                setCustomDateInput('');
-                              }
-                            }
-                          }}
-                          placeholder="e.g. Stargazing on the roof 🔭, Baking together 🍪"
-                          className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-rose-200 outline-none text-rose-800 text-xs focus:ring-2 focus:ring-rose-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (customDateInput.trim()) {
-                              setSelectedActivity(customDateInput.trim());
-                              setCustomDateInput('');
-                            }
-                          }}
-                          disabled={!customDateInput.trim()}
-                          className="px-3 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-medium text-xs transition disabled:opacity-40"
-                        >
-                          Pick
-                        </button>
-                      </div>
-                    </div>
-
-                    {selectedActivity && (
-                      <div className="mb-4 text-left p-3 rounded-xl bg-rose-50/80 border border-rose-200/80">
-                        <p className="text-xs font-semibold text-rose-700 mb-1">
-                          Chosen Date: <span className="font-bold">{formatCustomDateIdea(selectedActivity).emoji} {formatCustomDateIdea(selectedActivity).label}</span>
-                        </p>
-                        <textarea
-                          value={dateNote}
-                          onChange={(e) => setDateNote(e.target.value)}
-                          placeholder="Add a sweet note or time for him (optional)..."
-                          rows={2}
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-rose-200 outline-none text-rose-700 text-xs resize-none focus:ring-2 focus:ring-rose-300"
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                      <button
-                        onClick={() => handleDateSubmit(false)}
-                        disabled={submittingDate || redirecting || !selectedActivity}
-                        className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold hover:shadow-lg transition disabled:opacity-50 text-xs flex items-center justify-center gap-1.5"
-                      >
-                        {submittingDate ? (
-                          <>
-                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Sending Date Request...</span>
-                          </>
-                        ) : redirecting ? (
-                          <span>Redirecting to Dashboard... ❤️</span>
-                        ) : (
-                          <span>Confirm Date Request ❤️</span>
-                        )}
-                      </button>
-
-                      <button
-                        onClick={() => handleDateSubmit(true)}
-                        disabled={submittingDate || redirecting}
-                        className="py-3 px-4 rounded-xl bg-white/90 text-rose-600 font-semibold hover:bg-white text-xs border border-rose-200/70 shadow-2xs transition flex items-center justify-center gap-1"
-                      >
-                        <span>Skip to Dashboard</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-base text-rose-500 font-body animate-pulse">Give me a second to celebrate… 🥳</p>
-                )}
-              </motion.div>
-            </motion.div>
-          )}
-
-          {response === 'maybe' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-amber-50/95 to-orange-50/95 backdrop-blur-md p-4">
-              <motion.div initial={{ scale: 0.85 }} animate={{ scale: 1 }} className="text-center max-w-md w-full bg-white/90 p-8 rounded-3xl shadow-xl border border-amber-100">
-                <Heart className="w-16 h-16 text-amber-400 mx-auto mb-4 fill-amber-300/30" />
-                <h1 className="font-display text-3xl font-bold text-amber-600 mb-2">That's okay ❤️</h1>
-                <p className="font-body text-base text-amber-700/80 mb-1">Take your time, pookie.</p>
-                <p className="font-body text-xs text-amber-600/70 mb-4">You don't have to decide right now. Your feelings are respected.</p>
-                <textarea
-                  value={dateNote}
-                  onChange={(e) => setDateNote(e.target.value)}
-                  placeholder="Leave a note for him (optional)..."
-                  rows={3}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-amber-200 outline-none text-amber-800 text-xs resize-none mb-4"
-                />
-                <div className="flex gap-2 justify-center">
-                  <button
-                    onClick={async () => {
-                      if (dateNote && exp) {
-                        await supabase.from('responses').insert({
-                          experience_id: exp.id,
-                          response: 'maybe',
-                          note: dateNote,
-                        });
-                      }
-                      toast({ title: 'Response saved ❤️', description: 'Redirecting to your dashboard...' });
-                      router.push(profile?.role === 'sender' ? '/sender' : '/receiver');
-                    }}
-                    className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 text-white font-medium hover:shadow-lg transition text-xs flex items-center justify-center gap-1.5"
-                  >
-                    <span>Save & Go to Dashboard</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {response === 'no' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-gray-50/95 to-rose-50/95 backdrop-blur-md p-4">
-              <motion.div initial={{ scale: 0.85 }} animate={{ scale: 1 }} className="text-center max-w-md w-full bg-white/90 p-8 rounded-3xl shadow-xl border border-gray-100">
-                <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4 fill-gray-300/30" />
-                <h1 className="font-display text-3xl font-bold text-gray-600 mb-2">I understand ❤️</h1>
-                <p className="font-body text-base text-gray-600 mb-1">Thank you for reading everything.</p>
-                <p className="font-body text-xs text-gray-400 mb-6">I won't pressure you. Take good care of yourself.</p>
-                <button
-                  onClick={() => router.push(profile?.role === 'sender' ? '/sender' : '/receiver')}
-                  className="py-3 px-6 rounded-xl bg-gray-700 text-white font-medium hover:bg-gray-800 transition text-xs inline-flex items-center gap-1.5"
-                >
-                  <span>Go to Receiver Dashboard</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1251,17 +1050,9 @@ export default function LoveExperiencePage() {
           accentColor={cfg.accent}
           tagline="Made with love, for you"
           onHeartClick={handleHeartClick}
-          className="mt-12"
+          className="mt-8"
         />
       </div>
     </div>
-  );
-}
-
-function Section({ children, dark }: { children: React.ReactNode; dark?: boolean }) {
-  return (
-    <section className={`min-h-[60vh] flex items-center justify-center px-4 py-16 md:py-24 ${dark ? '' : ''}`}>
-      <div className="w-full max-w-4xl">{children}</div>
-    </section>
   );
 }
