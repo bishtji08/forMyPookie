@@ -91,7 +91,12 @@ export default function SignupPage() {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { name: name.trim(), role: finalRole } },
+        options: {
+          data: { name: name.trim(), role: finalRole },
+          emailRedirectTo: typeof window !== 'undefined'
+            ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectUrl || '/receiver')}&role=${finalRole}`
+            : undefined,
+        },
       });
       if (error) throw error;
 

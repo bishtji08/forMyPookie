@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, Sparkles, X, Volume2, VolumeX, Play, Pause, Lock, ArrowLeft, ArrowRight, MessageCircle, Star
+  Heart, Sparkles, X, Volume2, VolumeX, Play, Pause, Lock, ArrowLeft, ArrowRight, MessageCircle, Star,
+  Eye, EyeOff, Mail, User as UserIcon, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
@@ -67,6 +68,179 @@ export default function LoveExperiencePage() {
     setReduceMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
 
+  // Inline Auth State for locked screen
+  const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authVerificationPending, setAuthVerificationPending] = useState(false);
+  const [authCooldown, setAuthCooldown] = useState(0);
+  const [authResending, setAuthResending] = useState(false);
+
+  useEffect(() => {
+    if (authCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setAuthCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [authCooldown]);
+
+  const handleInlineLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (authSubmitting) return;
+    if (!authEmail.trim() || !authPassword) {
+      setAuthError('Please enter both your email and password.');
+      return;
+    }
+    setAuthSubmitting(true);
+    setAuthError(null);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: authEmail.trim(),
+        password: authPassword,
+      });
+      if (error) throw error;
+
+      // Connect receiver account to experience if not yet bound
+      if (data.user && exp && !exp.receiver_id && data.user.id !== exp.sender_id) {
+        const loggedUserId = data.user.id;
+        await supabase
+          .from('experiences')
+          .update({
+            receiver_id: loggedUserId,
+            receiver_name: profile?.name || data.user.user_metadata?.name || authName.trim() || exp.receiver_name,
+          })
+          .eq('id', exp.id);
+        setExp((prev) => (prev ? { ...prev, receiver_id: loggedUserId } : null));
+      }
+
+      toast({
+        title: 'Unlocked! ❤️',
+        description: 'Welcome to your love story.',
+      });
+    } catch (err: any) {
+      const errLower = (err?.message || '').toLowerCase();
+      if (errLower.includes('not confirmed') || errLower.includes('email_not_confirmed')) {
+        setAuthVerificationPending(true);
+        setAuthCooldown(60);
+        setAuthError('Please verify your email address to log in. Check your inbox.');
+      } else if (errLower.includes('invalid login') || errLower.includes('invalid_credentials') || errLower.includes('invalid_grant')) {
+        setAuthError('Incorrect email or password. Please try again or create an account.');
+      } else {
+        setAuthError(err?.message || 'Login failed. Please try again.');
+      }
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleInlineSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (authSubmitting) return;
+    const finalName = (authName.trim() || exp?.receiver_name || 'My Pookie').trim();
+    if (!authEmail.trim() || !authPassword) {
+      setAuthError('Please enter your email and password.');
+      return;
+    }
+    if (authPassword.length < 6) {
+      setAuthError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setAuthSubmitting(true);
+    setAuthError(null);
+    const tokenStr = Array.isArray(token) ? token[0] : token;
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: authEmail.trim(),
+        password: authPassword,
+        options: {
+          data: { name: finalName, role: 'receiver' },
+          emailRedirectTo: typeof window !== 'undefined'
+            ? `${window.location.origin}/auth/callback?redirect=/love/${tokenStr}&role=receiver`
+            : undefined,
+        },
+      });
+      if (error) throw error;
+
+      if (data.user) {
+        const newUserId = data.user.id;
+        await supabase.from('profiles').upsert({
+          id: newUserId,
+          name: finalName,
+          email: authEmail.trim(),
+          role: 'receiver',
+          status: 'active',
+        });
+
+        if (exp && !exp.receiver_id && newUserId !== exp.sender_id) {
+          await supabase
+            .from('experiences')
+            .update({
+              receiver_id: newUserId,
+              receiver_name: finalName,
+            })
+            .eq('id', exp.id);
+          setExp((prev) => (prev ? { ...prev, receiver_id: newUserId, receiver_name: finalName } : null));
+        }
+      }
+
+      if (data.user && !data.session) {
+        setAuthVerificationPending(true);
+        setAuthCooldown(60);
+        toast({
+          title: 'Account created! 🎉',
+          description: 'Please verify your email address to unlock.',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Account created & Unlocked! 💖',
+        description: `Welcome, ${finalName}! Your letter is ready.`,
+      });
+    } catch (err: any) {
+      let msg = err?.message || 'Sign up failed. Please try again.';
+      if (msg.includes('already') || msg.includes('registered')) {
+        msg = 'An account with this email already exists. Switch to Log In tab!';
+        setAuthTab('login');
+      }
+      setAuthError(msg);
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleInlineResendVerification = async () => {
+    if (authCooldown > 0 || authResending || !authEmail.trim()) return;
+    setAuthResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: authEmail.trim(),
+      });
+      if (error) throw error;
+      toast({
+        title: 'Verification email resent! 💌',
+        description: `Check your inbox at ${authEmail}.`,
+      });
+      setAuthCooldown(60);
+    } catch (err: any) {
+      toast({
+        title: 'Failed to resend email',
+        description: err?.message || 'Please wait a moment and try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setAuthResending(false);
+    }
+  };
+
   useEffect(() => {
     if (authLoading) return;
     const tokenStr = Array.isArray(token) ? token[0] : token;
@@ -92,6 +266,9 @@ export default function LoveExperiencePage() {
       }
 
       setExp(expData as Experience);
+      if (expData.receiver_name) {
+        setAuthName(expData.receiver_name);
+      }
 
       // Auto-connect receiver account if current user is logged in
       if (user && expData && user.id !== expData.sender_id && !expData.receiver_id) {
@@ -293,82 +470,233 @@ export default function LoveExperiencePage() {
   if (!user) {
     const tokenStr = Array.isArray(token) ? token[0] : token;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] px-4 relative overflow-hidden">
-        {/* Floating hearts */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(10)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute"
-              initial={{ y: '105vh', x: `${8 + i * 9}%`, opacity: 0 }}
-              animate={{ y: '-10vh', opacity: [0, 0.35, 0] }}
-              transition={{ duration: 7 + i, repeat: Infinity, delay: i * 0.4 }}
-            >
-              <GlossyHeart size={18 + (i % 3) * 6} glow={false} className="opacity-30" />
-            </motion.div>
-          ))}
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] px-4 py-12 relative overflow-hidden">
+        {/* Floating ambient hearts */}
+        <FloatingAmbientHearts theme="pink-dream" />
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="text-center max-w-md relative z-10 w-full p-8 rounded-3xl bg-white/85 backdrop-blur-md shadow-2xl border border-white/90"
+          initial={{ opacity: 0, scale: 0.96, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="max-w-md relative z-10 w-full p-6 sm:p-8 rounded-3xl bg-white/90 backdrop-blur-md shadow-2xl border border-rose-100/80"
         >
           {/* Glowing locked envelope with 3D heart */}
           <motion.div
             animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
-            className="relative mx-auto mb-6 w-28 h-20"
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            className="relative mx-auto mb-5 w-24 h-16 sm:w-28 sm:h-20"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-rose-200 via-pink-200 to-purple-200 rounded-2xl shadow-xl shadow-rose-200/50" />
-            <div className="absolute top-0 left-0 right-0 h-0 border-l-[56px] border-r-[56px] border-b-[36px] border-l-transparent border-r-transparent border-b-rose-100/90" />
+            <div className="absolute top-0 left-0 right-0 h-0 border-l-[48px] sm:border-l-[56px] border-r-[48px] sm:border-r-[56px] border-b-[30px] sm:border-b-[36px] border-l-transparent border-r-transparent border-b-rose-100/90" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white shadow-md flex items-center justify-center">
                 <Lock className="w-5 h-5 text-rose-500" />
               </div>
             </div>
           </motion.div>
 
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-rose-500" /> Private Love Letter
+          <div className="text-center mb-5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200/70 text-rose-600 text-xs font-semibold mb-2 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-rose-500" /> Private Love Letter
+            </div>
+
+            <h1 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#3f1d2e] tracking-tight mb-1">
+              For {exp?.receiver_name || 'My Pookie'} ❤️
+            </h1>
+
+            {exp?.receiver_nickname && (
+              <p className="font-handwritten text-xl text-rose-600 mb-1">
+                &ldquo;To my {exp.receiver_nickname}&rdquo;
+              </p>
+            )}
+
+            <p className="text-xs text-[#8f6479] mt-1 leading-relaxed">
+              {exp?.sender_name ? `${exp.sender_name} made a secret love story just for you.` : 'A secret love story was made just for you.'}
+              <br />
+              <span className="font-medium text-rose-700">Please log in or create an account to unlock and open.</span>
+            </p>
           </div>
 
-          <h1 className="font-serif-display text-3xl sm:text-4xl font-semibold text-[#3f1d2e] mb-2 tracking-tight">
-            For {exp?.receiver_name || 'My Pookie'} ❤️
-          </h1>
+          {/* Auth Tab Switcher */}
+          <div className="flex bg-rose-100/60 p-1 rounded-xl mb-4 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => { setAuthTab('login'); setAuthError(null); }}
+              className={`flex-1 py-2 rounded-lg transition text-center ${
+                authTab === 'login'
+                  ? 'bg-white text-rose-600 shadow-sm'
+                  : 'text-rose-900/60 hover:text-rose-900'
+              }`}
+            >
+              ❤️ Log In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthTab('signup'); setAuthError(null); }}
+              className={`flex-1 py-2 rounded-lg transition text-center ${
+                authTab === 'signup'
+                  ? 'bg-white text-rose-600 shadow-sm'
+                  : 'text-rose-900/60 hover:text-rose-900'
+              }`}
+            >
+              💖 Create Account
+            </button>
+          </div>
 
-          {exp?.receiver_nickname && (
-            <p className="font-handwritten text-2xl text-rose-600 mb-2">
-              &ldquo;To my {exp.receiver_nickname}&rdquo;
-            </p>
+          {/* Error Message */}
+          {authError && (
+            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+              <div className="flex-1 leading-snug">{authError}</div>
+            </div>
           )}
 
-          <p className="text-[#3f1d2e]/80 mb-2 font-body text-sm leading-relaxed">
-            {exp?.sender_name ? `${exp.sender_name} made a secret love story just for you.` : 'Someone made a secret love story just for you.'}
-          </p>
+          {/* Verification Pending Notice */}
+          {authVerificationPending && (
+            <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+              <p className="font-semibold mb-1">Email verification sent! 💌</p>
+              <p className="text-[11px] opacity-80 mb-2">Check your email ({authEmail}) and click the link to unlock your letter.</p>
+              <button
+                type="button"
+                onClick={handleInlineResendVerification}
+                disabled={authCooldown > 0 || authResending}
+                className="text-xs font-bold text-rose-600 underline hover:text-rose-700 disabled:opacity-50"
+              >
+                {authResending ? 'Resending…' : authCooldown > 0 ? `Resend in ${authCooldown}s` : 'Resend Email'}
+              </button>
+            </div>
+          )}
 
-          <p className="text-[#8f6479] text-xs mb-6 font-body leading-relaxed">
-            This letter is private & protected. Please log in or create an account to unlock your love letter, view memories, and reply in private chat.
-          </p>
+          {/* Tab 1: Log In Form */}
+          {authTab === 'login' && (
+            <form onSubmit={handleInlineLogin} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="email"
+                    required
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                </div>
+              </div>
 
-          {/* Auth Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href={`/login?redirect=/love/${tokenStr}`}
-              className="flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-medium hover:shadow-lg transition-all hover:scale-105 flex items-center justify-center gap-2 text-xs"
-            >
-              <Heart className="w-4 h-4 fill-current" /> Log in to Unlock
-            </Link>
-            <Link
-              href={`/signup?redirect=/love/${tokenStr}&name=${encodeURIComponent(exp?.receiver_name || '')}&role=receiver`}
-              className="flex-1 py-3 px-5 rounded-2xl bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 font-medium transition-all hover:scale-105 flex items-center justify-center gap-2 text-xs shadow-2xs"
-            >
-              Sign Up 💖
-            </Link>
-          </div>
+              <div>
+                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showAuthPassword ? 'text' : 'password'}
+                    required
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-3 py-2.5 pr-10 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthPassword(!showAuthPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-400 hover:text-rose-600"
+                  >
+                    {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
-          <div className="mt-4">
+              <button
+                type="submit"
+                disabled={authSubmitting}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs shadow-md hover:shadow-lg transition transform hover:scale-[1.01] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              >
+                {authSubmitting ? (
+                  <span>Unlocking… ❤️</span>
+                ) : (
+                  <>
+                    <Heart className="w-4 h-4 fill-current" />
+                    <span>Unlock Love Letter ❤️</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Tab 2: Create Account Form */}
+          {authTab === 'signup' && (
+            <form onSubmit={handleInlineSignUp} className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Your Name</label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    required
+                    value={authName}
+                    onChange={(e) => setAuthName(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="email"
+                    required
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showAuthPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    placeholder="Choose a password (min 6 chars)"
+                    className="w-full px-3 py-2.5 pr-10 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthPassword(!showAuthPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-400 hover:text-rose-600"
+                  >
+                    {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={authSubmitting}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs shadow-md hover:shadow-lg transition transform hover:scale-[1.01] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              >
+                {authSubmitting ? (
+                  <span>Creating Account… 💖</span>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Create Account & Unlock 💖</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Social Divider & Google Login */}
+          <div className="mt-4 pt-3 border-t border-rose-100/80">
             <GoogleButton
               redirectUrl={`/love/${tokenStr}`}
               role="receiver"
@@ -376,10 +704,38 @@ export default function LoveExperiencePage() {
             />
           </div>
 
-          <p className="text-[#8f6479]/70 text-[11px] mt-4">
-            🔒 Only authorized accounts can view this love letter.
+          <p className="text-[#8f6479]/70 text-[11px] text-center mt-3 flex items-center justify-center gap-1">
+            <span>🔒</span>
+            <span>Private & encrypted. Only authorized receiver can view.</span>
           </p>
         </motion.div>
+      </div>
+    );
+  }
+
+  // If user is logged in with a different account that is not the sender and not the bound receiver
+  if (user && exp?.receiver_id && user.id !== exp.receiver_id && user.id !== exp.sender_id) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] px-4 relative overflow-hidden">
+        <FloatingAmbientHearts theme="pink-dream" />
+        <div className="text-center max-w-md w-full p-8 rounded-3xl bg-white/90 backdrop-blur-md shadow-2xl border border-rose-100 relative z-10">
+          <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mx-auto mb-4 shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#3f1d2e] mb-2">Private Love Letter</h2>
+          <p className="text-sm text-[#8f6479] mb-6 leading-relaxed">
+            This love letter was created specifically for <strong>{exp.receiver_name}</strong> and is bound to their account. You are currently signed in as <strong>{profile?.name || user.email}</strong>.
+          </p>
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.reload();
+            }}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-xs shadow-lg hover:shadow-xl transition hover:scale-[1.02] cursor-pointer"
+          >
+            Switch Account / Log In with {exp.receiver_name}&apos;s Email
+          </button>
+        </div>
       </div>
     );
   }
@@ -389,12 +745,35 @@ export default function LoveExperiencePage() {
   const isDark = theme === 'lavender-night' || theme === 'starry-romance';
   const themeConfig = cfg;
   const subColor = cfg.subColor;
+  const isSender = Boolean(user && exp && user.id === exp.sender_id);
 
   if (!opened) {
     return (
       <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${cfg.unopenedBg} px-4 relative overflow-hidden`}>
+        {/* Sender Preview Notice Banner */}
+        {isSender && (
+          <div className="fixed top-3 left-4 right-4 z-50 flex justify-center pointer-events-none">
+            <div className="pointer-events-auto bg-amber-500/95 text-white text-xs font-medium px-4 py-2 rounded-2xl shadow-xl border border-amber-300 flex items-center gap-2 max-w-xl">
+              <span className="text-base">👁️</span>
+              <span className="flex-1 text-[11px] leading-tight">
+                <strong>Sender Preview Mode:</strong> You are logged in as sender. On your receiver&apos;s device, this letter is locked until she logs in or signs up.
+              </span>
+              <button
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  window.location.reload();
+                }}
+                className="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition cursor-pointer"
+              >
+                Test Logged Out
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Floating top navigation if logged in */}
-        {user && (
+        {user && !isSender && (
           <div className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none">
             <Link
               href={profile?.role === 'sender' ? '/sender' : '/receiver'}
@@ -426,8 +805,30 @@ export default function LoveExperiencePage() {
     <div className={`min-h-screen bg-gradient-to-b ${cfg.openedBg} ${cfg.textColor} relative`}>
       {exp?.music_url && <audio ref={audioRef} src={exp.music_url} loop />}
 
+      {/* Sender Preview Notice Banner */}
+      {isSender && (
+        <div className="fixed top-3 left-4 right-4 z-50 flex justify-center pointer-events-none">
+          <div className="pointer-events-auto bg-amber-500/95 text-white text-xs font-medium px-4 py-2 rounded-2xl shadow-xl border border-amber-300 flex items-center gap-2 max-w-xl">
+            <span className="text-base">👁️</span>
+            <span className="flex-1 text-[11px] leading-tight">
+              <strong>Sender Preview Mode:</strong> You are logged in as sender. On your receiver&apos;s device, this letter is locked until she logs in or signs up.
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.reload();
+              }}
+              className="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition cursor-pointer"
+            >
+              Test Logged Out
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Floating navigation to dashboard & chat */}
-      {user && (
+      {user && !isSender && (
         <div className="fixed top-4 left-4 right-4 z-40 flex items-center justify-between pointer-events-none">
           <Link
             href={profile?.role === 'sender' ? '/sender' : '/receiver'}
