@@ -525,7 +525,7 @@ export default function LoveExperiencePage() {
             transition={{ duration: 0.6 }}
           >
             <div className="text-center mb-6">
-              <p className="font-script text-2xl text-rose-500 mb-1">Remember these moments?</p>
+              <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Remember these moments?</p>
               <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
                 Our Favorite Memories 📸
               </h3>
@@ -540,7 +540,7 @@ export default function LoveExperiencePage() {
                     <motion.div
                       key={mem.id || i}
                       whileHover={{ scale: 1.04, rotate: 0 }}
-                      className={`bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transition-all text-left relative cursor-pointer ${
+                      className={`bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-black/10 dark:border-white/10 transition-all text-left relative cursor-pointer ${
                         i % 3 === 0 ? 'transform -rotate-1' : i % 3 === 1 ? 'transform rotate-2' : 'transform -rotate-2'
                       }`}
                       onClick={() => {
@@ -549,8 +549,8 @@ export default function LoveExperiencePage() {
                         }
                       }}
                     >
-                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-rose-200/60 rounded-xs rotate-2 pointer-events-none" />
-                      <div className="w-full h-36 rounded-xl overflow-hidden mb-3 bg-rose-50 flex items-center justify-center">
+                      <div className={`absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 ${cfg.tapeColor} rounded-xs rotate-2 pointer-events-none`} />
+                      <div className={`w-full h-36 rounded-xl overflow-hidden mb-3 ${cfg.polaroidInnerBg} flex items-center justify-center`}>
                         {mem.media_url ? (
                           isVid ? (
                             <video src={mem.media_url} playsInline preload="metadata" className="w-full h-full object-cover" />
@@ -561,10 +561,10 @@ export default function LoveExperiencePage() {
                           <span className="text-3xl">{i === 0 ? '☕' : i === 1 ? '⛰️' : '🍕'}</span>
                         )}
                       </div>
-                      <h4 className="font-bold text-sm text-rose-950 mb-0.5">{mem.title}</h4>
-                      {mem.date && <p className="text-[11px] text-rose-400 font-mono mb-1">{mem.date}{mem.location ? ` · ${mem.location}` : ''}</p>}
+                      <h4 className="font-bold text-sm text-slate-900 mb-0.5">{mem.title}</h4>
+                      {mem.date && <p className="text-[11px] text-slate-400 font-mono mb-1">{mem.date}{mem.location ? ` · ${mem.location}` : ''}</p>}
                       {mem.caption && (
-                        <p className="font-script text-base text-rose-600 leading-snug">
+                        <p className={`font-script text-base ${cfg.subColor} leading-snug`}>
                           {mem.caption}
                         </p>
                       )}
@@ -577,42 +577,42 @@ export default function LoveExperiencePage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <motion.div
                   whileHover={{ scale: 1.04, rotate: 0 }}
-                  className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-1 transition-all text-left relative"
+                  className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-black/10 dark:border-white/10 transform -rotate-1 transition-all text-left relative"
                 >
-                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-rose-200/60 rounded-xs rotate-2 pointer-events-none" />
-                  <div className="h-32 sm:h-36 bg-gradient-to-br from-rose-100/80 to-purple-100/80 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                  <div className={`absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 ${cfg.tapeColor} rounded-xs rotate-2 pointer-events-none`} />
+                  <div className={`h-32 sm:h-36 ${cfg.polaroidInnerBg} rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner`}>
                     ☕
                   </div>
-                  <p className="font-bold text-sm text-rose-950 mb-0.5">The First Date</p>
-                  <p className="font-script text-base text-rose-600 leading-snug">
+                  <p className="font-bold text-sm text-slate-900 mb-0.5">The First Date</p>
+                  <p className={`font-script text-base ${cfg.subColor} leading-snug`}>
                     Spilled coffee & still got your number
                   </p>
                 </motion.div>
 
                 <motion.div
                   whileHover={{ scale: 1.04, rotate: 0 }}
-                  className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform rotate-2 transition-all text-left relative"
+                  className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-black/10 dark:border-white/10 transform rotate-2 transition-all text-left relative"
                 >
-                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-purple-200/60 rounded-xs -rotate-2 pointer-events-none" />
-                  <div className="h-32 sm:h-36 bg-gradient-to-br from-purple-100/80 to-pink-100/80 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                  <div className={`absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 ${cfg.tapeColor} rounded-xs -rotate-2 pointer-events-none`} />
+                  <div className={`h-32 sm:h-36 ${cfg.polaroidInnerBg} rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner`}>
                     ⛰️
                   </div>
-                  <p className="font-bold text-sm text-rose-950 mb-0.5">Mountain Trip</p>
-                  <p className="font-script text-base text-rose-600 leading-snug">
+                  <p className="font-bold text-sm text-slate-900 mb-0.5">Mountain Trip</p>
+                  <p className={`font-script text-base ${cfg.subColor} leading-snug`}>
                     You made me take 400 photos & I loved it
                   </p>
                 </motion.div>
 
                 <motion.div
                   whileHover={{ scale: 1.04, rotate: 0 }}
-                  className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-2 transition-all text-left relative"
+                  className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-black/10 dark:border-white/10 transform -rotate-2 transition-all text-left relative"
                 >
-                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-amber-200/60 rounded-xs rotate-1 pointer-events-none" />
-                  <div className="h-32 sm:h-36 bg-gradient-to-br from-amber-100/80 to-rose-100/80 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                  <div className={`absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 ${cfg.tapeColor} rounded-xs rotate-1 pointer-events-none`} />
+                  <div className={`h-32 sm:h-36 ${cfg.polaroidInnerBg} rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner`}>
                     🍕
                   </div>
-                  <p className="font-bold text-sm text-rose-950 mb-0.5">Pizza Disaster</p>
-                  <p className="font-script text-base text-rose-600 leading-snug">
+                  <p className="font-bold text-sm text-slate-900 mb-0.5">Pizza Disaster</p>
+                  <p className={`font-script text-base ${cfg.subColor} leading-snug`}>
                     Burned pasta, best pizza ever
                   </p>
                 </motion.div>
@@ -631,7 +631,7 @@ export default function LoveExperiencePage() {
               transition={{ duration: 0.6 }}
             >
               <div className="text-center mb-6">
-                <p className="font-script text-2xl text-rose-500 mb-1">Proof we belong together</p>
+                <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Proof we belong together</p>
                 <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
                   Evidence That We Are Cute 🖼️
                 </h3>
@@ -679,7 +679,7 @@ export default function LoveExperiencePage() {
               transition={{ duration: 0.6 }}
             >
               <div className="text-center mb-6">
-                <p className="font-script text-2xl text-rose-500 mb-1">Inside jokes only we understand</p>
+                <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Inside jokes only we understand</p>
                 <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
                   Our Shared Brain Cells 😂❤️
                 </h3>
@@ -690,13 +690,13 @@ export default function LoveExperiencePage() {
                   <motion.div
                     key={f.id}
                     whileHover={{ y: -3 }}
-                    className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.cardBg}`}
+                    className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.jokeCardBg}`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-serif-display text-base font-bold">{f.title}</h4>
                       <span className="text-xl">😜</span>
                     </div>
-                    <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-purple-100/80' : 'text-slate-600'}`}>
+                    <p className="text-xs sm:text-sm leading-relaxed opacity-85">
                       {f.description}
                     </p>
                   </motion.div>
@@ -716,7 +716,7 @@ export default function LoveExperiencePage() {
               transition={{ duration: 0.6 }}
             >
               <div className="text-center mb-6">
-                <p className="font-script text-2xl text-rose-500 mb-1">Since we&apos;re here…</p>
+                <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Since we&apos;re here…</p>
                 <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
                   Reasons I Love You ❤️
                 </h3>
@@ -727,13 +727,13 @@ export default function LoveExperiencePage() {
                   <motion.div
                     key={r.id}
                     whileHover={{ y: -3 }}
-                    className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.cardBg}`}
+                    className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.jokeCardBg}`}
                   >
                     <div className="flex items-center justify-between mb-1.5">
                       <h4 className="font-serif-display text-base font-bold">{r.title}</h4>
                       <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                     </div>
-                    <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-purple-100/80' : 'text-slate-600'}`}>
+                    <p className="text-xs sm:text-sm leading-relaxed opacity-85">
                       {r.description}
                     </p>
                   </motion.div>
@@ -750,7 +750,7 @@ export default function LoveExperiencePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className={`rounded-3xl p-6 sm:p-10 text-center border shadow-2xl transition-all relative ${cfg.cardBg}`}
+            className={`rounded-3xl p-6 sm:p-10 text-center border shadow-2xl transition-all relative ${cfg.inviteBg}`}
           >
             <h3 className={`font-serif-display text-3xl sm:text-4xl font-bold mb-2 tracking-tight ${cfg.titleColor}`}>
               Can I take you out?
@@ -766,8 +766,8 @@ export default function LoveExperiencePage() {
                 onClick={() => handleResponse('yes')}
                 className={`flex-1 py-3 px-4 rounded-xl font-bold text-base shadow-lg transition-all transform hover:scale-[1.02] ${
                   response === 'yes'
-                    ? 'bg-rose-500 text-white ring-2 ring-rose-400 ring-offset-2'
-                    : 'bg-rose-500 hover:bg-rose-600 text-white'
+                    ? `${cfg.buttonPrimary} ring-2 ring-offset-2`
+                    : cfg.buttonPrimary
                 }`}
               >
                 ❤️ YES
@@ -808,21 +808,17 @@ export default function LoveExperiencePage() {
                   transition={{ duration: 0.4 }}
                   className="overflow-hidden"
                 >
-                  <div className={`mt-4 p-5 sm:p-6 rounded-2xl border text-left ${
-                    isDark
-                      ? 'bg-purple-950/60 border-purple-400/30 text-white'
-                      : 'bg-rose-50/70 border-rose-200/80 text-slate-800'
-                  }`}>
+                  <div className={`mt-4 p-5 sm:p-6 rounded-2xl border text-left ${cfg.dateBoxBg}`}>
                     {dateConfirmed ? (
                       <div className="text-center py-4">
                         <div className="text-4xl mb-2">🎉🥂✨</div>
-                        <h4 className="font-serif-display text-2xl font-bold text-rose-500 mb-1">
+                        <h4 className={`font-serif-display text-2xl font-bold mb-1 ${cfg.subColor}`}>
                           It&apos;s a Date!
                         </h4>
                         <p className={`text-sm mb-4 ${isDark ? 'text-purple-200' : 'text-slate-600'}`}>
                           Your date response has been sent to him!{' '}
                           {selectedActivity && (
-                            <span className="font-bold text-rose-500 block mt-1">
+                            <span className={`font-bold block mt-1 ${cfg.subColor}`}>
                               Activity: {formatCustomDateIdea(selectedActivity).emoji} {formatCustomDateIdea(selectedActivity).label}
                             </span>
                           )}
@@ -830,7 +826,7 @@ export default function LoveExperiencePage() {
                         <div className="flex flex-col sm:flex-row gap-2 justify-center">
                           <Link
                             href={profile?.role === 'sender' ? '/sender' : '/receiver'}
-                            className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow transition inline-flex items-center justify-center gap-1.5"
+                            className={`px-5 py-2.5 rounded-xl ${cfg.buttonPrimary} text-xs font-semibold shadow transition inline-flex items-center justify-center gap-1.5`}
                           >
                             <span>Go to Dashboard</span>
                             <ArrowRight className="w-3.5 h-3.5" />
@@ -838,16 +834,16 @@ export default function LoveExperiencePage() {
                           {profile?.role === 'receiver' && (
                             <Link
                               href="/receiver/messages"
-                              className="px-5 py-2.5 rounded-xl bg-white text-rose-600 hover:bg-rose-50 text-xs font-semibold border border-rose-200 shadow-xs transition inline-flex items-center justify-center gap-1.5"
+                              className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-semibold shadow-md backdrop-blur-md transition hover:scale-105"
                             >
                               <MessageCircle className="w-3.5 h-3.5" />
-                              <span>Open Private Chat</span>
+                              <span>Chat</span>
                             </Link>
                           )}
                           <button
                             type="button"
                             onClick={() => setDateConfirmed(false)}
-                            className="px-4 py-2 rounded-xl text-xs text-rose-400 hover:underline"
+                            className={`px-4 py-2 rounded-xl text-xs hover:underline ${cfg.subColor}`}
                           >
                             Change Date
                           </button>
@@ -860,7 +856,7 @@ export default function LoveExperiencePage() {
                             <span>🥂</span>
                             <span>Pick Our Date Activity</span>
                           </p>
-                          <span className="text-[11px] font-script text-rose-500 text-lg">
+                          <span className={`text-[11px] font-script text-lg ${cfg.subColor}`}>
                             She said yes! ❤️
                           </span>
                         </div>
@@ -884,11 +880,7 @@ export default function LoveExperiencePage() {
                                   type="button"
                                   onClick={() => setSelectedActivity(item.key)}
                                   className={`p-3 rounded-2xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1.5 border relative ${
-                                    isSelected
-                                      ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-[1.02]'
-                                      : isDark
-                                      ? 'bg-white/5 text-purple-100 hover:bg-white/10 border-purple-400/20'
-                                      : 'bg-white text-slate-700 hover:bg-rose-100/60 border-rose-200/80 shadow-2xs'
+                                    isSelected ? cfg.dateCardActive : cfg.dateCardBg
                                   }`}
                                 >
                                   <span className="text-2xl">{item.emoji}</span>
@@ -918,11 +910,7 @@ export default function LoveExperiencePage() {
                                 }
                               }}
                               placeholder="e.g. Stargazing on the roof 🔭, Baking together 🍪"
-                              className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs outline-none border focus:ring-2 focus:ring-rose-400 ${
-                                isDark
-                                  ? 'bg-white/10 border-white/20 text-white placeholder-white/40'
-                                  : 'bg-white border-rose-200 text-slate-800 placeholder-slate-400'
-                              }`}
+                              className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs outline-none border focus:ring-2 ${cfg.inputBg}`}
                             />
                             <button
                               type="button"
@@ -933,7 +921,7 @@ export default function LoveExperiencePage() {
                                 }
                               }}
                               disabled={!customDateInput.trim()}
-                              className="px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold disabled:opacity-40 transition shadow-xs"
+                              className={`px-4 py-2.5 rounded-xl ${cfg.buttonPrimary} text-xs font-semibold disabled:opacity-40 transition shadow-xs`}
                             >
                               Pick
                             </button>
@@ -941,9 +929,9 @@ export default function LoveExperiencePage() {
                         </div>
 
                         {selectedActivity && (
-                          <div className="mb-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-400/30">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <p className="text-xs font-semibold text-rose-500">
+                          <div className="mb-4 p-3.5 rounded-xl border border-black/10 dark:border-white/15 bg-black/5 dark:bg-white/5">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className={`text-xs font-semibold ${cfg.subColor}`}>
                                 Chosen Date:{' '}
                                 <span className="font-bold">
                                   {formatCustomDateIdea(selectedActivity).emoji} {formatCustomDateIdea(selectedActivity).label}
@@ -952,7 +940,7 @@ export default function LoveExperiencePage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedActivity(null)}
-                                className="text-[11px] text-rose-400 hover:underline"
+                                className={`text-[11px] hover:underline ${cfg.subColor}`}
                               >
                                 Clear
                               </button>
@@ -962,9 +950,7 @@ export default function LoveExperiencePage() {
                               onChange={(e) => setDateNote(e.target.value)}
                               placeholder="Add a sweet note for him (optional)..."
                               rows={2}
-                              className={`w-full px-3 py-1.5 rounded-xl text-xs outline-none border resize-none focus:ring-2 focus:ring-rose-400 ${
-                                isDark ? 'bg-white/10 border-white/20 text-white placeholder-white/40' : 'bg-white border-rose-200 text-slate-800'
-                              }`}
+                              className={`w-full px-3 py-1.5 rounded-xl text-xs outline-none border resize-none focus:ring-2 ${cfg.inputBg}`}
                             />
                           </div>
                         )}
@@ -974,7 +960,7 @@ export default function LoveExperiencePage() {
                             type="button"
                             onClick={() => handleDateSubmit(false)}
                             disabled={submittingDate || !selectedActivity}
-                            className="flex-1 py-2.5 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow transition disabled:opacity-40 flex items-center justify-center gap-1.5"
+                            className={`flex-1 py-2.5 px-4 rounded-xl ${cfg.buttonPrimary} font-bold text-xs shadow transition disabled:opacity-40 flex items-center justify-center gap-1.5`}
                           >
                             {submittingDate ? (
                               <span>Saving Date Request...</span>

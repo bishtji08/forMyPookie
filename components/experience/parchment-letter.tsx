@@ -52,22 +52,6 @@ export function ParchmentLetter({
 
   return (
     <div className="w-full max-w-3xl mx-auto px-2 sm:px-4">
-      {/* Badge & Title */}
-      <div className="text-center mb-6">
-        {badge && (
-          <p className="font-script text-2xl sm:text-3xl mb-1 text-rose-500 tracking-wide">
-            {badge}
-          </p>
-        )}
-        <h2
-          className={`font-serif-display text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight ${
-            actualIsDark ? 'text-white' : cfg.titleColor
-          }`}
-        >
-          {title}
-        </h2>
-      </div>
-
       {/* Parchment Paper Container */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
@@ -76,11 +60,35 @@ export function ParchmentLetter({
         transition={{ duration: 0.8 }}
         className={`relative rounded-3xl p-6 sm:p-10 md:p-12 shadow-2xl transition-all border ${cfg.cardBg}`}
       >
+        {/* Top Wax Seal Ribbon Badge */}
+        {badge && (
+          <div className={`absolute -top-4 sm:-top-5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold shadow-lg whitespace-nowrap z-20 ${cfg.badgeBg}`}>
+            <span>{badge.includes('fight') ? '✨' : '💌'}</span>
+            <span>{badge}</span>
+          </div>
+        )}
+
+        {/* Header inside parchment */}
+        <div className="text-center mt-2 mb-6">
+          <h2
+            className={`font-serif-display text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-1 ${
+              actualIsDark ? 'text-white' : cfg.titleColor
+            }`}
+          >
+            {title}
+          </h2>
+          {receiverName && (
+            <p className={`font-script text-2xl ${cfg.subColor}`}>
+              To my {receiverName} ❤️
+            </p>
+          )}
+        </div>
+
         {/* Decorative Postage Stamp & Postmark */}
         <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2 select-none opacity-80 pointer-events-none">
           <div
             className={`border border-dashed rounded-lg px-2.5 py-1 text-[11px] font-mono tracking-widest uppercase flex items-center gap-1 rotate-3 ${
-              isDark ? 'border-pink-300/40 text-pink-200' : 'border-rose-400/60 text-rose-600 bg-rose-50/60'
+              actualIsDark ? 'border-white/30 text-white/70' : 'border-black/20 text-black/60'
             }`}
           >
             <span>AIR MAIL</span>
@@ -89,14 +97,14 @@ export function ParchmentLetter({
         </div>
 
         {/* Floating Font Size Control */}
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-rose-100/60">
-          <div className="flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-rose-400">
-            <Heart className="w-3.5 h-3.5 fill-rose-400" />
-            <span>To My {receiverName || 'Pookie'}</span>
+        <div className="flex items-center justify-between pb-3 mb-5 border-b border-black/10 dark:border-white/10">
+          <div className={`flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase opacity-75 ${cfg.subColor}`}>
+            <Heart className="w-3.5 h-3.5 fill-current" />
+            <span>Special Delivery</span>
           </div>
 
-          <div className="flex items-center gap-1 bg-rose-50/80 rounded-full p-1 border border-rose-200/50">
-            <span className="text-[10px] uppercase font-bold text-rose-400 px-1.5">Text</span>
+          <div className="flex items-center gap-1 rounded-full p-1 border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+            <span className="text-[10px] uppercase font-bold px-1.5 opacity-60">Text</span>
             {(['normal', 'large', 'xlarge'] as const).map((size) => (
               <button
                 key={size}
@@ -104,8 +112,8 @@ export function ParchmentLetter({
                 onClick={() => setFontSize(size)}
                 className={`px-2 py-0.5 rounded-full text-xs font-bold transition ${
                   fontSize === size
-                    ? 'bg-rose-500 text-white shadow-2xs'
-                    : 'text-rose-600 hover:text-rose-900'
+                    ? `${cfg.badgeBg} shadow-2xs`
+                    : 'opacity-70 hover:opacity-100'
                 }`}
               >
                 {size === 'normal' ? 'A' : size === 'large' ? 'A+' : 'A++'}
@@ -135,7 +143,7 @@ export function ParchmentLetter({
         {/* Sign-off */}
         {senderName && (
           <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
-            <div className="font-script text-2xl sm:text-3xl text-rose-500">
+            <div className={`font-script text-2xl sm:text-3xl ${cfg.subColor}`}>
               Forever yours,
               <br />
               <span className="font-bold">{senderName}</span>
@@ -154,15 +162,15 @@ export function ParchmentLetter({
               onClick={toggleSecret}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              className={`w-full py-3 px-4 rounded-2xl border transition-all text-left flex items-center justify-between ${
+              className={`w-full py-3 px-4 rounded-2xl border transition-all text-left flex items-center justify-between cursor-pointer ${
                 actualIsDark
-                  ? 'bg-white/5 hover:bg-white/10 border-pink-400/30 text-pink-200'
-                  : 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-400/30 text-rose-800'
+                  ? 'bg-white/5 hover:bg-white/10 border-white/15 text-white'
+                  : 'bg-black/5 hover:bg-black/10 border-black/10'
               }`}
             >
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-rose-500" />
-                <span className="font-script text-xl font-bold">
+                <Sparkles className="w-4 h-4" />
+                <span className={`font-script text-xl font-bold ${cfg.subColor}`}>
                   {secretOpen ? 'Fold Secret Note 💌' : '✨ P.S. Tap to unfold a secret note…'}
                 </span>
               </div>
@@ -178,14 +186,8 @@ export function ParchmentLetter({
                   transition={{ duration: 0.4 }}
                   className="overflow-hidden"
                 >
-                  <div
-                    className={`mt-2 p-5 rounded-2xl border ${
-                      actualIsDark
-                        ? 'bg-purple-950/60 border-purple-400/30 text-white'
-                        : 'bg-amber-500/10 border-amber-400/40 text-amber-950'
-                    }`}
-                  >
-                    <p className={`font-script text-xl sm:text-2xl leading-relaxed ${actualIsDark ? 'text-amber-200' : 'text-amber-900'}`}>
+                  <div className={`mt-2 p-5 rounded-2xl border ${cfg.secretBoxBg}`}>
+                    <p className="font-script text-xl sm:text-2xl leading-relaxed">
                       {secretNote}
                     </p>
                   </div>

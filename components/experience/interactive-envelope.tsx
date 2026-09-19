@@ -135,13 +135,19 @@ export function InteractiveEnvelope({
             className="absolute top-0 left-0 right-0 w-full z-20 pointer-events-none"
           >
             <svg
-              viewBox="0 0 480 165"
-              className="w-full h-auto filter drop-shadow-[0_5px_12px_rgba(0,0,0,0.15)]"
+              viewBox="0 0 460 145"
+              className="w-full h-auto filter drop-shadow-[0_6px_10px_rgba(0,0,0,0.08)]"
               preserveAspectRatio="none"
             >
               <path
-                d="M0,0 L480,0 L248,156 Q240,162 232,156 L0,0 Z"
+                d="M0,0 L460,0 L230,145 Z"
                 fill={cfg.envFlapFill}
+              />
+              <path
+                d="M0,0 L230,145 L460,0"
+                fill="none"
+                stroke="rgba(255,255,255,0.85)"
+                strokeWidth="2"
               />
             </svg>
           </motion.div>
@@ -155,22 +161,22 @@ export function InteractiveEnvelope({
                   : { scale: hovered ? 1.1 : 1 }
               }
               transition={{ duration: 0.4 }}
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-[0_6px_22px_rgba(0,0,0,0.25)] border-2 border-white flex items-center justify-center pointer-events-auto cursor-pointer group-hover:shadow-xl transition-shadow"
+              className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/90 backdrop-blur-sm shadow-[0_6px_22px_rgba(0,0,0,0.25)] border-2 border-white flex items-center justify-center pointer-events-auto cursor-pointer group-hover:shadow-xl transition-shadow"
             >
-              <GlossyHeart size={26} className="sm:w-7 sm:h-7" glow={false} />
+              <GlossyHeart size={28} className="sm:w-8 sm:h-8" glow={false} />
             </motion.div>
           </div>
         </div>
       </motion.div>
 
-      {/* "tap to open" in romantic cursive script matching theme color */}
+      {/* "tap to open 💌" in romantic cursive script matching theme color */}
       <motion.p
         animate={{ opacity: [0.55, 1, 0.55] }}
         transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
-        className={`font-handwritten text-2xl sm:text-3xl italic tracking-wide mt-6 sm:mt-8 select-none cursor-pointer ${cfg.envTapColor}`}
+        className={`font-script text-2xl sm:text-3xl italic tracking-wide mt-6 sm:mt-8 select-none cursor-pointer ${cfg.envTapColor}`}
         onClick={handleClick}
       >
-        tap to open
+        tap to open 💌
       </motion.p>
     </div>
   );
