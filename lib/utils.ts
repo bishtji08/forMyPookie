@@ -26,39 +26,28 @@ export function getSafeRedirect(url: string | null | undefined, fallback: string
   }
 }
 
-export const CANONICAL_APP_URL = 'https://my-pookie-three.vercel.app';
-
 /**
- * Resolves the primary application URL dynamically.
- * Automatically prevents preview deployment URLs from leaking into public QR codes or OAuth callbacks.
+ * Resolves the primary application URL dynamically from the browser window or environment variables.
+ * In the browser, ALWAYS uses window.location.origin so shared links and QR codes use the real, active deployment domain.
  */
 export function getAppUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, '');
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin.replace(/\/+$/, '');
   }
 
-  if (typeof window !== 'undefined' && window.location.origin) {
-    const origin = window.location.origin;
-    // If running on local development (localhost or 127.0.0.1), keep local origin
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return origin;
-    }
-    // If running on a Vercel preview/branch deployment (which has Vercel authentication protection),
-    // always fall back to the public canonical production domain for share links and OAuth!
-    const isVercelPreview =
-      origin.includes('-bixtysarthak2005-') ||
-      origin.includes('-git-') ||
-      (origin.includes('.vercel.app') && origin.replace('https://', '').split('-').length > 3);
-    if (!isVercelPreview) {
-      return origin;
-    }
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, '');
   }
 
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.replace(/\/+$/, '')}`;
   }
 
-  return CANONICAL_APP_URL;
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL.replace(/\/+$/, '')}`;
+  }
+
+  return 'http://localhost:3000';
 }
 
 /**
