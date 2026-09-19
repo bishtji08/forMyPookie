@@ -10,10 +10,11 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Cormorant Garamond', 'Playfair Display', 'serif'],
-        serif: ['Cormorant Garamond', 'Lora', 'serif'],
-        hand: ['Dancing Script', 'Caveat', 'cursive'],
-        script: ['Dancing Script', 'cursive'],
+        display: ['Playfair Display', 'Cormorant Garamond', 'serif'],
+        serif: ['Lora', 'Cormorant Garamond', 'Georgia', 'serif'],
+        hand: ['Great Vibes', 'Dancing Script', 'Caveat', 'cursive'],
+        script: ['Great Vibes', 'Alex Brush', 'cursive'],
+        luxury: ['Italiana', 'Playfair Display', 'serif'],
         body: ['Poppins', 'Inter', 'sans-serif'],
         poppins: ['Poppins', 'sans-serif'],
       },

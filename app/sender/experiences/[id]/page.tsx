@@ -432,30 +432,59 @@ export default function ExperienceDetailPage() {
                   className="w-full px-3 py-2.5 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 outline-none text-rose-700 resize-none font-serif-body text-lg"
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-rose-600 mb-1.5 block">Theme</label>
-                  <select
-                    value={editForm.theme || 'pink-dream'}
-                    onChange={(e) => setEditForm({ ...editForm, theme: e.target.value as ExperienceTheme })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-white/60 border border-rose-200/50 focus:border-rose-400 outline-none text-rose-700"
-                  >
-                    {(Object.entries(THEME_CONFIG) as [ExperienceTheme, typeof THEME_CONFIG[ExperienceTheme]][]).map(([k, v]) => (
-                      <option key={k} value={k}>{v.name}</option>
-                    ))}
-                  </select>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-semibold text-rose-700 block">Experience Theme for Receiver</label>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                    Active: {THEME_CONFIG[editForm.theme || 'pink-dream'].name}
+                  </span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-rose-600 mb-1.5 block">Music</label>
-                  <FileUpload
-                    experienceId={exp.id}
-                    type="audio"
-                    accept="audio/*"
-                    label="Upload Audio"
-                    currentUrl={editForm.music_url || ''}
-                    onUpload={(url) => setEditForm({ ...editForm, music_url: url })}
-                  />
+                <p className="text-xs text-rose-400/80 mb-3">
+                  Select which theme your receiver will see when opening this secret link.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {(Object.entries(THEME_CONFIG) as [ExperienceTheme, typeof THEME_CONFIG[ExperienceTheme]][]).map(([key, config]) => {
+                    const isSelected = (editForm.theme || 'pink-dream') === key;
+                    const isDark = key === 'lavender-night' || key === 'starry-romance';
+                    return (
+                      <button
+                        type="button"
+                        key={key}
+                        onClick={() => setEditForm({ ...editForm, theme: key })}
+                        className={`rounded-2xl p-3 text-left border-2 transition-all relative ${
+                          isSelected
+                            ? 'border-rose-500 bg-rose-50/80 shadow-md ring-2 ring-rose-300/40 scale-[1.02]'
+                            : 'border-rose-100 hover:border-rose-200 bg-white/70'
+                        }`}
+                      >
+                        <div className={`h-12 rounded-xl bg-gradient-to-br ${config.gradient} mb-2 shadow-xs flex items-center justify-center`}>
+                          <span className="text-2xl drop-shadow-sm">
+                            {key === 'pink-dream' ? '🌸' : key === 'lavender-night' ? '🌙' : key === 'sunset-love' ? '🌅' : key === 'minimal-cream' ? '✨' : '🌌'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-rose-900 truncate">{config.name}</p>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-rose-600 stroke-[3] shrink-0" />}
+                        </div>
+                        <span className={`text-[10px] inline-block mt-0.5 font-medium ${isDark ? 'text-indigo-600' : 'text-amber-600'}`}>
+                          {isDark ? 'Dark Mode' : 'Light Mode'}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-rose-600 mb-1.5 block">Background Music (optional)</label>
+                <FileUpload
+                  experienceId={exp.id}
+                  type="audio"
+                  accept="audio/*"
+                  label="Upload Audio"
+                  currentUrl={editForm.music_url || ''}
+                  onUpload={(url) => setEditForm({ ...editForm, music_url: url })}
+                />
               </div>
 
               {/* Date Options Manager */}

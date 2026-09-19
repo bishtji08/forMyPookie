@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, Sparkles, Star, X, Coffee, Utensils, Film, Moon, Car, Eye,
-  Volume2, VolumeX, Play, Pause
+  Heart, Sparkles, Star, Coffee, Utensils, Film, Moon, Car,
+  RefreshCw, Palette
 } from 'lucide-react';
-import type { Experience, Memory, FunnyMoment, LoveReason, GalleryItem, ResponseStatus, ExperienceTheme } from '@/lib/types';
+import type { Experience, Memory, FunnyMoment, LoveReason, ResponseStatus, ExperienceTheme } from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
 import { Footer } from '@/components/footer';
 import { ParchmentLetter } from '@/components/experience/parchment-letter';
@@ -14,6 +14,7 @@ import { InteractiveEnvelope } from '@/components/experience/interactive-envelop
 import { FloatingReactions } from '@/components/experience/floating-reactions';
 import { PRESET_DATE_IDEAS, DATE_CATEGORIES, formatCustomDateIdea } from '@/lib/date-ideas';
 import { GlossyHeart } from '@/components/experience/glossy-heart';
+import { FloatingAmbientHearts } from '@/components/experience/floating-ambient-hearts';
 
 const demoExp: Experience = {
   id: 'demo',
@@ -24,9 +25,9 @@ const demoExp: Experience = {
   receiver_nickname: 'Pooks',
   sender_name: 'Your Boy',
   relationship: 'Girlfriend',
-  apology_message: "I'm sorry. Not the casual 'sorry yaar' kind. The real one.\n\nI know I messed up. I know I said the wrong thing at the wrong time. And I know that 'I was tired' or 'I was stressed' doesn't excuse it.\n\nYou didn't deserve that. You deserved better from me. And I want to do better.",
-  love_letter: "Before this stupid little fight, there was an entire story called us.\n\nThere were late-night calls where we talked about nothing for hours. There was the time you laughed so hard at my terrible joke that milk came out of your nose (I promised I'd never bring that up again, but here we are).\n\nThere was the first time I realized I loved you. Not the dramatic movie moment — it was a Tuesday afternoon and you were eating a sandwich and complaining about your boss, and I thought, 'Yeah. This is the person I want to hear complain about sandwiches for the rest of my life.'\n\nI love you. Not the Instagram caption kind. The real, quiet, show-up-at-2am kind.",
-  final_letter: "One last thing...\n\nI'm not asking you to forget what happened. I'm asking you to let me earn better.\n\nI love you. I respect your feelings. And whatever you decide — yes, maybe, or no — I'll respect that too.\n\nYou're not obligated to say yes. You're not obligated to forgive me right now. You're only obligated to take care of yourself.\n\nI just wanted you to know that I tried. Properly, this time.",
+  apology_message: "I'm sorry. Not the casual 'sorry yaar' kind. The real one.\n\nI know I messed up. I know I said the wrong thing at the wrong time. And I know that 'I was tired' or 'I was stressed' doesn't excuse it.\n\nYou didn't deserve that. You deserved better from me. And I want to do better.\n\nBefore this stupid little fight, there was an entire story called us. The late-night calls where we talked about nothing for hours, laughing until our stomachs hurt, and all the quiet moments where I knew you were my favorite person.\n\nI love you. Not the Instagram caption kind. The real, quiet, show-up-for-you kind.",
+  love_letter: '',
+  final_letter: 'P.S. Whatever your answer is, I just want you to smile today. Take all the time you need. You will always be special to me. ❤️',
   theme: 'pink-dream',
   music_url: null,
   status: 'active',
@@ -47,20 +48,21 @@ const demoMemories: Memory[] = [
 ];
 
 const demoFunny: FunnyMoment[] = [
-  { id: '1', experience_id: 'demo', title: 'The Autocorrect Incident', description: 'You texted "I love you boob" instead of "I love you boo" and I have never let you forget it.', image_url: '', date: null, sort_order: 0, created_at: '' },
+  { id: '1', experience_id: 'demo', title: 'The Autocorrect Incident', description: 'You texted "I love you boob" instead of "I love you boo" and I will never let you forget it.', image_url: '', date: null, sort_order: 0, created_at: '' },
   { id: '2', experience_id: 'demo', title: 'The Dance Battle', description: 'You challenged me to a dance battle, tripped on your own foot, and still declared yourself the winner.', image_url: '', date: null, sort_order: 1, created_at: '' },
-  { id: '3', experience_id: 'demo', title: 'The Cooking Disaster', description: 'You tried to make pasta and set off the smoke alarm. We ordered pizza. It was the best pizza of our lives.', image_url: '', date: null, sort_order: 2, created_at: '' },
+  { id: '3', experience_id: 'demo', title: 'The Cooking Disaster', description: 'You tried to make pasta and set off the smoke alarm. We ordered pizza and it was the best night ever.', image_url: '', date: null, sort_order: 2, created_at: '' },
 ];
 
 const demoReasons: LoveReason[] = [
   { id: '1', experience_id: 'demo', title: 'Your Laugh', description: 'The real one. Not the polite one. The one where your whole face scrunches up.', image_url: '', sort_order: 0, created_at: '' },
   { id: '2', experience_id: 'demo', title: 'Your Random Habits', description: 'You hum while you think. You talk to plants. You name your pillows. All of it.', image_url: '', sort_order: 1, created_at: '' },
-  { id: '3', experience_id: 'demo', title: 'The Way You Care', description: 'You remember things I told you once, months ago, and ask about them. Every time.', image_url: '', sort_order: 2, created_at: '' },
-  { id: '4', experience_id: 'demo', title: 'You Being You', description: 'No explanation needed. Just you.', image_url: '', sort_order: 3, created_at: '' },
+  { id: '3', experience_id: 'demo', title: 'The Way You Care', description: 'You remember things I told you months ago, and ask about them every time.', image_url: '', sort_order: 2, created_at: '' },
+  { id: '4', experience_id: 'demo', title: 'You Being You', description: 'No explanation needed. Just you, exactly as you are.', image_url: '', sort_order: 3, created_at: '' },
 ];
 
 export default function DemoExperiencePage() {
   const [opened, setOpened] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<ExperienceTheme>('pink-dream');
   const [response, setResponse] = useState<ResponseStatus | null>(null);
   const [showDateSelection, setShowDateSelection] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
@@ -69,20 +71,18 @@ export default function DemoExperiencePage() {
   const [loveMeterValue, setLoveMeterValue] = useState(0);
   const [loveMeterCalculating, setLoveMeterCalculating] = useState(false);
   const [loveMeterDone, setLoveMeterDone] = useState(false);
-  const [gameAnswer, setGameAnswer] = useState<string | null>(null);
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [dateConfirmed, setDateConfirmed] = useState(false);
 
   const handleOpen = () => setOpened(true);
 
   const handleResponse = (resp: ResponseStatus) => {
     setResponse(resp);
-    if (resp === 'yes') setTimeout(() => setShowDateSelection(true), 2000);
+    if (resp === 'yes') setTimeout(() => setShowDateSelection(true), 1500);
   };
 
   const calculateLove = () => {
     setLoveMeterCalculating(true);
-    const values = [10, 27, 54, 89, 100];
+    const values = [12, 35, 68, 92, 100];
     let idx = 0;
     const interval = setInterval(() => {
       if (idx < values.length) {
@@ -94,293 +94,274 @@ export default function DemoExperiencePage() {
           setLoveMeterValue(0);
           setLoveMeterCalculating(false);
           setLoveMeterDone(true);
-        }, 500);
+        }, 400);
       }
-    }, 400);
+    }, 300);
   };
 
-  const theme = demoExp.theme;
-  const themeConfig = THEME_CONFIG[theme];
-  const isDark = false;
-  const bgColor = 'text-[#3f1d2e]';
-  const subColor = 'text-[#8f6479]';
+  const cfg = THEME_CONFIG[selectedTheme] || THEME_CONFIG['pink-dream'];
+  const isDark = cfg.isDark;
 
+  // Floating Live Theme Switcher Bar
+  const themeSwitcherBar = (
+    <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 p-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/20 shadow-2xl text-xs select-none max-w-[95vw] overflow-x-auto scrollbar-hide">
+      <div className="flex items-center gap-1 px-2 text-white/70 font-semibold text-[11px] whitespace-nowrap">
+        <Palette className="w-3.5 h-3.5 text-rose-400" />
+        <span className="hidden sm:inline">Theme:</span>
+      </div>
+      {(['pink-dream', 'lavender-night', 'sunset-love', 'minimal-cream', 'starry-romance'] as const).map((tKey) => (
+        <button
+          key={tKey}
+          type="button"
+          onClick={() => setSelectedTheme(tKey)}
+          className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+            selectedTheme === tKey
+              ? 'bg-rose-500 text-white shadow-md scale-105'
+              : 'text-white/75 hover:text-white hover:bg-white/10'
+          }`}
+        >
+          {tKey === 'pink-dream' ? '🌸 Pink' : tKey === 'lavender-night' ? '🌙 Lavender' : tKey === 'sunset-love' ? '🌅 Sunset' : tKey === 'minimal-cream' ? '✨ Cream' : '🌌 Starry'}
+        </button>
+      ))}
+      {opened && (
+        <button
+          type="button"
+          onClick={() => setOpened(false)}
+          className="ml-1 px-2.5 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-medium flex items-center gap-1 transition"
+          title="Re-test envelope opening"
+        >
+          <RefreshCw className="w-3 h-3" />
+          <span className="hidden md:inline">Envelope</span>
+        </button>
+      )}
+    </div>
+  );
+
+  // UNOPENED VIEW (The Envelope Screen)
   if (!opened) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] px-4 relative overflow-hidden">
-        {/* Dreamy floating soft pastel elements */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(12)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute"
-              initial={{ y: '105vh', x: `${5 + i * 8}%`, opacity: 0, rotate: 0 }}
-              animate={{
-                y: '-10vh',
-                opacity: [0, 0.45, 0],
-                rotate: i % 2 === 0 ? 180 : -180,
-              }}
-              transition={{
-                duration: 9 + (i % 5) * 2,
-                repeat: Infinity,
-                delay: i * 0.7,
-                ease: 'linear',
-              }}
-            >
-              {i % 3 === 0 ? (
-                <GlossyHeart size={18 + (i % 3) * 6} glow={false} className="opacity-40" />
-              ) : (
-                <span className="text-xl sm:text-2xl opacity-35 select-none">
-                  {i % 2 === 0 ? '🌸' : '✨'}
-                </span>
-              )}
-            </motion.div>
-          ))}
-        </div>
+      <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${cfg.unopenedBg} px-4 relative overflow-hidden transition-colors duration-500`}>
+        {themeSwitcherBar}
+
+        {/* Ambient floating 3D hearts & dreamy background elements */}
+        <FloatingAmbientHearts theme={selectedTheme} />
+
         <InteractiveEnvelope
           receiverName={demoExp.receiver_name}
           senderName={demoExp.sender_name}
           subtitle="a little something I made with my whole heart"
+          theme={selectedTheme}
           onOpen={handleOpen}
         />
       </div>
     );
   }
 
+  // OPENED VIEW (Streamlined, non-repetitive love story)
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fdf5fd] via-[#fbf0fa] to-[#fff7ee] text-[#3f1d2e]">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {[...Array(6)].map((_, i) => (
-          <motion.div key={i} className="absolute" initial={{ y: '100vh', x: `${Math.random() * 100}%`, opacity: 0 }} animate={{ y: '-10vh', opacity: [0, 0.15, 0] }} transition={{ duration: 8 + i * 2, repeat: Infinity, delay: i * 1.5 }}>
-            <Heart className="w-4 h-4 fill-current text-rose-400" />
-          </motion.div>
-        ))}
-      </div>
+    <div className={`min-h-screen bg-gradient-to-b ${cfg.openedBg} ${cfg.textColor} transition-colors duration-500 relative`}>
+      {themeSwitcherBar}
+
+      {/* Continuous ambient background floating hearts */}
+      <FloatingAmbientHearts theme={selectedTheme} />
 
       {/* Floating Reaction Dock */}
       <FloatingReactions isDark={isDark} />
 
-      <div className="relative z-10">
-        {/* Intro */}
-        <Section>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <p className={`font-handwritten text-2xl sm:text-3xl ${subColor} mb-2`}>Hey,</p>
-            <h1 className="font-serif-display text-4xl sm:text-6xl md:text-7xl font-semibold mb-6 text-[#3f1d2e] tracking-tight">{demoExp.receiver_name} ❤️</h1>
-            <p className={`font-body text-base sm:text-lg ${subColor} mb-8`}>Before anything else…</p>
-            <motion.h2 initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.3 }} className="font-serif-display text-5xl sm:text-7xl md:text-8xl font-semibold mb-4 text-[#3f1d2e] tracking-tight">I'm sorry.</motion.h2>
-            <p className={`font-body text-base sm:text-lg ${subColor} max-w-xl mx-auto`}>Not the casual "sorry yaar" kind. The real one.</p>
-          </motion.div>
-        </Section>
+      <div className="relative z-10 pt-16 sm:pt-20">
+        
+        {/* CHAPTER 1: The Heartfelt Stationery Letter */}
+        <section className="min-h-[70vh] flex items-center justify-center px-4 py-12 md:py-16">
+          <div className="w-full max-w-4xl">
+            <ParchmentLetter
+              title="Things I Should Have Said Properly…"
+              senderName={demoExp.sender_name}
+              receiverName={demoExp.receiver_name}
+              content={demoExp.apology_message}
+              secretNote="P.S. You deserve the best version of me, and I promise to give you exactly that. ❤️"
+              isDark={isDark}
+              accentColor={cfg.accent}
+            />
+          </div>
+        </section>
 
-        {/* Apology in Parchment Stationery */}
-        <Section>
-          <ParchmentLetter
-            title="Things I should have said properly…"
-            senderName={demoExp.sender_name}
-            receiverName={demoExp.receiver_name}
-            content={demoExp.apology_message}
-            secretNote="P.S. You deserve the best version of me, and I promise to give you exactly that."
-            isDark={isDark}
-            accentColor={themeConfig.accent}
-          />
-        </Section>
+        {/* CHAPTER 2: Our Memories & Polaroids */}
+        <section className="min-h-[60vh] flex items-center justify-center px-4 py-12 md:py-16">
+          <div className="w-full max-w-4xl">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
+              <p className={`font-handwritten text-2xl sm:text-3xl ${cfg.subColor} mb-2`}>Before this little fight…</p>
+              <h2 className={`font-serif-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3 tracking-tight ${cfg.titleColor}`}>
+                There was an entire story called us.
+              </h2>
+              <p className={`font-body text-sm sm:text-base ${cfg.subColor} mb-10 max-w-lg mx-auto`}>
+                Moments that remind me why you will always be my favorite human.
+              </p>
 
-        {/* Funny Court */}
-        <Section>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <p className={`font-handwritten text-2xl ${subColor} mb-2`}>A completely unbiased investigation…</p>
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-8" style={{ color: themeConfig.accent }}>THE PEOPLE VS. YOUR BOY</h2>
-            <div className="glass rounded-2xl p-6 md:p-8 max-w-xl mx-auto">
-              <p className="text-sm font-medium mb-4" style={{ color: themeConfig.accent }}>CHARGES:</p>
-              <div className="space-y-2 mb-6">
-                {['Being stupid', 'Saying the wrong thing', 'Making pookie angry', 'Having zero brain cells'].map((charge, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="flex items-center justify-between py-2 border-b border-rose-200/30">
-                    <span className="text-lg">{charge}</span><span className="text-2xl">✅</span>
+              {/* Polaroid Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                {demoMemories.map((mem, i) => (
+                  <motion.div
+                    key={mem.id}
+                    initial={{ opacity: 0, y: 30, rotate: i % 2 === 0 ? -2 : 2 }}
+                    whileInView={{ opacity: 1, y: 0, rotate: i % 2 === 0 ? -2 : 2 }}
+                    viewport={{ once: true }}
+                    whileHover={{ scale: 1.03, rotate: 0 }}
+                    className="relative bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/60 transition-all text-left"
+                  >
+                    <div className="w-full h-44 rounded-xl overflow-hidden mb-3 bg-gradient-to-br from-rose-100 to-purple-100 flex items-center justify-center text-4xl">
+                      {i === 0 ? '☕' : i === 1 ? '⛰️' : '🍕'}
+                    </div>
+                    <h3 className="font-serif-display text-lg font-bold text-rose-900 mb-0.5">{mem.title}</h3>
+                    <p className="text-[11px] text-rose-400 font-mono mb-2">{mem.date} · {mem.location}</p>
+                    <p className="font-handwritten text-lg text-rose-600 leading-snug">{mem.caption}</p>
                   </motion.div>
                 ))}
-                <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.5 }} className="flex items-center justify-between py-2">
-                  <span className="text-lg">Loving pookie 1000%</span><span className="text-2xl">❤️</span>
-                </motion.div>
-              </div>
-              <div className="text-center space-y-2">
-                <p className="text-2xl font-bold" style={{ color: themeConfig.accent }}>VERDICT: GUILTY.</p>
-                <p className="text-sm font-medium" style={{ color: themeConfig.accent }}>PUNISHMENT:</p>
-                <p>Must apologize properly</p><p>Must bring snacks</p><p>Must listen without arguing</p>
-                <p>Must give unlimited hugs <span className="text-sm italic">if she wants them</span></p>
-              </div>
-            </div>
-          </motion.div>
-        </Section>
-
-        {/* Memory Timeline */}
-        <Section>
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-            <p className={`font-handwritten text-2xl ${subColor} mb-2`}>But then I remembered something…</p>
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-2" style={{ color: themeConfig.accent }}>Before this stupid little fight,</h2>
-            <p className={`font-body text-lg ${subColor} mb-12`}>there was an entire story called us.</p>
-            <div className="max-w-2xl mx-auto space-y-8">
-              {demoMemories.map((mem, i) => (
-                <motion.div key={mem.id} initial={{ opacity: 0, y: 50, rotate: i % 2 === 0 ? -3 : 3 }} whileInView={{ opacity: 1, y: 0, rotate: i % 2 === 0 ? -2 : 2 }} viewport={{ once: true }} whileHover={{ scale: 1.03, rotate: 0 }} className="relative bg-white rounded-lg p-4 polaroid-shadow mx-auto max-w-sm">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-6 bg-rose-200/60 rounded-sm rotate-2" />
-                  <div className="w-full h-48 rounded overflow-hidden mb-3 bg-gradient-to-br from-rose-100 to-lavender-100 flex items-center justify-center">
-                    <Heart className="w-12 h-12 text-rose-300/40" />
-                  </div>
-                  <h3 className="font-display text-lg font-semibold text-rose-700 mb-1">{mem.title}</h3>
-                  <p className="text-xs text-rose-400/60">{mem.date} · {mem.location}</p>
-                  <p className="font-handwritten text-lg text-rose-500 mt-2">{mem.caption}</p>
-                  <div className="absolute bottom-2 right-2 text-rose-300/40"><Heart className="w-4 h-4" /></div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </Section>
-
-        {/* Funny Moments */}
-        <Section>
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-2" style={{ color: themeConfig.accent }}>Our shared brain cell collection 🧠❤️</h2>
-            <p className={`font-body text-sm ${subColor} mb-8`}>Inside jokes that only we get.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-              {demoFunny.map((f, i) => (
-                <motion.div key={f.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="glass rounded-2xl p-5">
-                  <h3 className="font-display text-lg font-semibold mb-1" style={{ color: themeConfig.accent }}>{f.title}</h3>
-                  <p className={`text-sm ${subColor}`}>{f.description}</p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </Section>
-
-        {/* Love Reasons */}
-        <Section>
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-            <p className={`font-handwritten text-2xl ${subColor} mb-2`}>Since we're here…</p>
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-8" style={{ color: themeConfig.accent }}>Let me remind you.</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              {demoReasons.map((r, i) => (
-                <motion.div key={r.id} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }} whileHover={{ y: -4 }} className="glass rounded-2xl p-5 text-center relative">
-                  <div className="absolute top-2 right-2"><Star className="w-4 h-4 text-rose-300/40" /></div>
-                  <h3 className="font-display text-lg font-semibold mb-2" style={{ color: themeConfig.accent }}>{r.title}</h3>
-                  <p className={`text-sm ${subColor}`}>{r.description}</p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </Section>
-
-        {/* Love Meter */}
-        <Section>
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-8" style={{ color: themeConfig.accent }}>How much do I love you?</h2>
-            <div className="glass rounded-2xl p-8 max-w-md mx-auto">
-              {!loveMeterDone ? (
-                <>
-                  <div className="text-6xl font-bold mb-4" style={{ color: themeConfig.accent }}>{loveMeterValue}% ❤️</div>
-                  <div className="w-full h-4 bg-rose-100/30 rounded-full overflow-hidden mb-4">
-                    <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${themeConfig.accent}, #ff6fa8)` }} animate={{ width: `${loveMeterValue}%` }} />
-                  </div>
-                  {!loveMeterCalculating && loveMeterValue === 0 && <button onClick={calculateLove} className="px-6 py-3 rounded-full bg-gradient-to-r from-rose-400 to-lavender-400 text-white font-medium hover:shadow-lg transition">Calculate my love.</button>}
-                  {loveMeterCalculating && <p className="text-sm animate-pulse" style={{ color: themeConfig.accent }}>Calculating…</p>}
-                </>
-              ) : (
-                <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
-                  <motion.p animate={{ x: [0, -2, 2, 0] }} transition={{ duration: 0.3, repeat: 3 }} className="text-2xl font-bold text-red-500 mb-2">ERROR</motion.p>
-                  <p className="text-lg mb-4" style={{ color: themeConfig.accent }}>Love limit exceeded.</p>
-                  <motion.p initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5, type: 'spring' }} className="text-6xl font-bold" style={{ color: themeConfig.accent }}>∞ ❤️</motion.p>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
-        </Section>
-
-        {/* Mini Game */}
-        <Section>
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center">
-            <h2 className="font-display text-2xl md:text-3xl font-bold mb-6" style={{ color: themeConfig.accent }}>Quick question…</h2>
-            <p className={`text-lg ${subColor} mb-6`}>Who is the cutest person in this relationship?</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-              {[{ label: 'Me 😎', value: 'me' }, { label: 'You 🥺', value: 'you' }, { label: 'Obviously you 🙄❤️', value: 'obviously-you' }].map((opt) => (
-                <button key={opt.value} onClick={() => setGameAnswer(opt.value)} className={`px-5 py-3 rounded-xl font-medium transition-all ${gameAnswer === opt.value ? 'bg-gradient-to-r from-rose-400 to-lavender-400 text-white shadow-lg' : `glass ${subColor} hover:shadow-md`}`}>{opt.label}</button>
-              ))}
-            </div>
-            <AnimatePresence>
-              {gameAnswer && gameAnswer !== 'obviously-you' && <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 text-lg font-handwritten" style={{ color: themeConfig.accent }}>Incorrect answer 😂</motion.p>}
-              {gameAnswer === 'obviously-you' && <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 text-lg font-handwritten" style={{ color: themeConfig.accent }}>Correct! ❤️</motion.p>}
-            </AnimatePresence>
-          </motion.div>
-        </Section>
-
-        {/* Rewind */}
-        <Section dark>
-          <div className="bg-gradient-to-b from-[#1a1a2e] to-[#0d0d1a] -mx-4 px-4 py-20 md:py-32 text-center">
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-              <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-8">If I could go back…</h2>
-              <div className="space-y-4 max-w-lg mx-auto">
-                {["I'd go back…", "To that moment…", "And choose my words more carefully.", "I can't change what happened.", "But I can choose what I do next."].map((text, i) => (
-                  <motion.p key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.3 }} className="font-serif-body text-xl md:text-2xl text-white/80">{text}</motion.p>
-                ))}
-                <motion.p initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: 1.8, duration: 0.8 }} className="font-display text-3xl md:text-4xl font-bold text-rose-400 pt-4">And I choose to do better.</motion.p>
               </div>
             </motion.div>
           </div>
-        </Section>
+        </section>
 
-        {/* Final Letter in Parchment Stationery */}
-        <Section>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <ParchmentLetter
-              title="One last thing…"
-              senderName={demoExp.sender_name}
-              receiverName={demoExp.receiver_name}
-              content={demoExp.final_letter || ''}
-              secretNote="P.S. Whatever you decide, thank you for being you."
-              isDark={isDark}
-              accentColor={themeConfig.accent}
-            />
-          </motion.div>
-        </Section>
-
-        {/* Invitation */}
-        {!response && (
-          <Section>
+        {/* CHAPTER 3: Reasons I Love You & Fun Inside Jokes */}
+        <section className="min-h-[60vh] flex items-center justify-center px-4 py-12 md:py-16">
+          <div className="w-full max-w-4xl">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
-              <h2 className="font-display text-3xl md:text-5xl font-bold mb-4" style={{ color: themeConfig.accent }}>So… can I ask you one tiny thing?</h2>
-              <p className="font-handwritten text-3xl mb-2" style={{ color: themeConfig.accent }}>Can I take you out?</p>
-              <p className={`font-body text-sm ${subColor} mb-10`}>Coffee? Dinner? A walk? You choose.</p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto">
-                <button onClick={() => handleResponse('yes')} className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-rose-400 to-pink-400 text-white font-bold text-lg hover:shadow-xl hover:shadow-rose-300/40 transition-all hover:scale-105">
-                  ❤️ YES<p className="text-xs font-normal mt-1 opacity-80">Okay, let's go.</p>
-                </button>
-                <button onClick={() => handleResponse('maybe')} className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-amber-300 to-orange-300 text-white font-bold text-lg hover:shadow-xl hover:shadow-amber-300/40 transition-all hover:scale-105">
-                  🥺 MAYBE<p className="text-xs font-normal mt-1 opacity-80">I need a little time.</p>
-                </button>
-                <button onClick={() => handleResponse('no')} className="flex-1 py-4 rounded-2xl bg-white/60 border border-rose-200 text-rose-600 font-bold text-lg hover:shadow-lg transition-all hover:scale-105">
-                  🤍 NO<p className="text-xs font-normal mt-1 opacity-60">Not right now.</p>
-                </button>
+              <p className={`font-handwritten text-2xl sm:text-3xl ${cfg.subColor} mb-2`}>Since we're here…</p>
+              <h2 className={`font-serif-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3 tracking-tight ${cfg.titleColor}`}>
+                Reasons I Love You ❤️
+              </h2>
+              <p className={`font-body text-sm sm:text-base ${cfg.subColor} mb-10 max-w-lg mx-auto`}>
+                Inside jokes, little habits, and everything that makes you unique.
+              </p>
+
+              {/* Reasons & Funny Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto mb-10">
+                {demoReasons.map((r, i) => (
+                  <motion.div
+                    key={r.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.08 }}
+                    whileHover={{ y: -3 }}
+                    className={`rounded-2xl p-5 text-left border shadow-md transition-all ${
+                      isDark
+                        ? 'bg-[#1a1228]/90 border-purple-400/30 text-white'
+                        : 'bg-white/90 border-rose-100 text-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className={`font-serif-display text-lg font-bold ${isDark ? 'text-purple-200' : 'text-rose-800'}`}>
+                        {r.title}
+                      </h3>
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    </div>
+                    <p className={`text-sm ${isDark ? 'text-purple-100/80' : 'text-slate-600'} leading-relaxed`}>
+                      {r.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Love Meter Card */}
+              <div className={`rounded-3xl p-6 sm:p-8 max-w-md mx-auto border shadow-xl ${
+                isDark ? 'bg-[#181126]/90 border-purple-400/30' : 'bg-white/90 border-rose-100'
+              }`}>
+                <h4 className={`font-serif-display text-2xl font-bold mb-4 ${cfg.titleColor}`}>
+                  How much do I love you?
+                </h4>
+                {!loveMeterDone ? (
+                  <>
+                    <div className="text-5xl sm:text-6xl font-bold mb-4 font-serif-display text-rose-500">
+                      {loveMeterValue}% ❤️
+                    </div>
+                    <div className="w-full h-3.5 bg-rose-100 rounded-full overflow-hidden mb-5">
+                      <motion.div
+                        className="h-full rounded-full bg-gradient-to-r from-rose-500 to-pink-500"
+                        animate={{ width: `${loveMeterValue}%` }}
+                      />
+                    </div>
+                    {!loveMeterCalculating && loveMeterValue === 0 && (
+                      <button
+                        onClick={calculateLove}
+                        className="px-6 py-2.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-xs shadow-md hover:shadow-lg transition"
+                      >
+                        Calculate My Love ✨
+                      </button>
+                    )}
+                    {loveMeterCalculating && (
+                      <p className="text-xs text-rose-400 animate-pulse font-medium">Calculating infinite love…</p>
+                    )}
+                  </>
+                ) : (
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
+                    <p className="text-sm font-bold text-rose-500 mb-1">LOVE LIMIT EXCEEDED</p>
+                    <p className="text-5xl font-bold text-rose-500 font-serif-display mb-1">∞</p>
+                    <p className={`text-xs ${cfg.subColor}`}>Can't be measured. Never ending. ❤️</p>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
-          </Section>
+          </div>
+        </section>
+
+        {/* CHAPTER 4: The Invitation & Date Selection */}
+        {!response && (
+          <section className="min-h-[60vh] flex items-center justify-center px-4 py-12 md:py-16">
+            <div className="w-full max-w-2xl text-center">
+              <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                <h2 className={`font-serif-display text-3xl sm:text-5xl font-bold mb-3 tracking-tight ${cfg.titleColor}`}>
+                  Can I take you out?
+                </h2>
+                <p className={`font-handwritten text-2xl sm:text-3xl ${cfg.subColor} mb-8`}>
+                  Coffee? Dinner? A walk? You choose.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+                  <button
+                    onClick={() => handleResponse('yes')}
+                    className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold text-lg hover:shadow-xl hover:shadow-rose-500/30 transition-all hover:scale-105"
+                  >
+                    ❤️ YES
+                    <p className="text-xs font-normal mt-0.5 opacity-90">Okay, let's go.</p>
+                  </button>
+                  <button
+                    onClick={() => handleResponse('maybe')}
+                    className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 text-white font-bold text-lg hover:shadow-xl hover:shadow-amber-400/30 transition-all hover:scale-105"
+                  >
+                    🥺 MAYBE
+                    <p className="text-xs font-normal mt-0.5 opacity-90">I need a little time.</p>
+                  </button>
+                  <button
+                    onClick={() => handleResponse('no')}
+                    className={`flex-1 py-4 rounded-2xl border font-bold text-lg hover:shadow-lg transition-all hover:scale-105 ${
+                      isDark ? 'bg-white/10 border-white/20 text-white/80' : 'bg-white/80 border-rose-200 text-rose-600'
+                    }`}
+                  >
+                    🤍 NO
+                    <p className="text-xs font-normal mt-0.5 opacity-70">Not right now.</p>
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </section>
         )}
 
         {/* Response screens */}
         <AnimatePresence>
           {response === 'yes' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-rose-100/90 to-lavender-100/90 backdrop-blur-sm p-4">
-              {[...Array(20)].map((_, i) => (
-                <motion.div key={i} className="absolute" initial={{ y: -100, x: `${Math.random() * 100}%`, rotate: 0, opacity: 1 }} animate={{ y: '100vh', rotate: 360, opacity: [1, 1, 0] }} transition={{ duration: 3 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2 }}>
-                  {i % 3 === 0 ? <Heart className="w-6 h-6 fill-rose-400 text-rose-400" /> : i % 3 === 1 ? <Sparkles className="w-5 h-5 text-amber-400" /> : <Star className="w-5 h-5 fill-amber-300 text-amber-300" />}
-                </motion.div>
-              ))}
-              <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center max-w-md w-full relative z-10 py-6">
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-rose-600 mb-2">SHE SAID YES 😭❤️</h1>
-                <p className="text-rose-400 text-sm mb-4">The best answer ever.</p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+              <motion.div initial={{ scale: 0.85 }} animate={{ scale: 1 }} className="text-center max-w-md w-full relative z-10 py-6">
+                <h1 className="font-serif-display text-4xl sm:text-5xl font-bold text-rose-400 mb-2">
+                  SHE SAID YES 😭❤️
+                </h1>
+                <p className="text-white/80 text-sm mb-4">The best answer ever.</p>
 
                 {showDateSelection && (
-                  <div className="glass rounded-3xl p-5 sm:p-6 shadow-2xl border border-rose-100/80 bg-white/95 max-h-[85vh] overflow-y-auto">
+                  <div className="rounded-3xl p-5 sm:p-6 shadow-2xl border border-rose-100/80 bg-white text-slate-800 max-h-[85vh] overflow-y-auto">
                     {dateConfirmed ? (
                       <div className="p-4 text-center">
                         <div className="text-4xl mb-2">🎉🥂✨</div>
-                        <h4 className="font-display text-xl font-bold text-rose-700 mb-1">It's a Date!</h4>
+                        <h4 className="font-serif-display text-xl font-bold text-rose-700 mb-1">It's a Date!</h4>
                         <p className="text-sm text-rose-600 mb-4">
                           You picked: <span className="font-bold">{selectedActivity ? formatCustomDateIdea(selectedActivity).emoji + ' ' + formatCustomDateIdea(selectedActivity).label : 'A special surprise!'}</span>
                         </p>
@@ -399,7 +380,7 @@ export default function DemoExperiencePage() {
                       </div>
                     ) : (
                       <>
-                        <h3 className="font-display text-xl sm:text-2xl font-bold text-rose-700 mb-1">Our Next Date? 🥂</h3>
+                        <h3 className="font-serif-display text-xl sm:text-2xl font-bold text-rose-700 mb-1">Our Next Date? 🥂</h3>
                         <p className="text-xs text-rose-400/80 mb-4">Pick an activity or suggest your own special idea.</p>
 
                         {/* Category Filter Pills */}
@@ -487,8 +468,8 @@ export default function DemoExperiencePage() {
                                   }
                                 }
                               }}
-                              placeholder="e.g. Stargazing on the roof 🔭, Baking together 🍪"
-                              className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-rose-200 outline-none text-rose-800 text-xs focus:ring-2 focus:ring-rose-300"
+                              placeholder="e.g. Stargazing on the roof 🔭"
+                              className="flex-1 px-3 py-2 rounded-xl bg-white border border-rose-200 outline-none text-rose-800 text-xs focus:ring-2 focus:ring-rose-300"
                             />
                             <button
                               type="button"
@@ -541,44 +522,47 @@ export default function DemoExperiencePage() {
               </motion.div>
             </motion.div>
           )}
+
           {response === 'maybe' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-amber-50/90 to-orange-50/90 backdrop-blur-sm p-4">
-              <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} className="text-center max-w-lg">
-                <Heart className="w-16 h-16 text-amber-400 mx-auto mb-6 fill-amber-300/30" />
-                <h1 className="font-display text-3xl md:text-4xl font-bold text-amber-600 mb-4">That's okay ❤️</h1>
-                <p className="font-body text-lg text-amber-500/80 mb-2">Take your time, pookie.</p>
-                <p className="font-body text-lg text-amber-500/80">You don't have to decide right now.</p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+              <motion.div initial={{ scale: 0.85 }} animate={{ scale: 1 }} className="text-center max-w-sm rounded-3xl p-8 bg-white text-slate-800 shadow-2xl border border-amber-200">
+                <Heart className="w-12 h-12 text-amber-500 mx-auto mb-4 fill-amber-300" />
+                <h3 className="font-serif-display text-2xl font-bold text-amber-700 mb-2">That's okay ❤️</h3>
+                <p className="text-sm text-slate-600 mb-6">Take all the time you need, pookie. You don't have to decide right now.</p>
+                <button
+                  onClick={() => setResponse(null)}
+                  className="px-6 py-2.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shadow transition"
+                >
+                  Close
+                </button>
               </motion.div>
             </motion.div>
           )}
+
           {response === 'no' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-b from-gray-50/90 to-rose-50/90 backdrop-blur-sm p-4">
-              <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} className="text-center max-w-lg">
-                <Heart className="w-16 h-16 text-gray-400 mx-auto mb-6 fill-gray-300/30" />
-                <h1 className="font-display text-3xl md:text-4xl font-bold text-gray-600 mb-4">I understand ❤️</h1>
-                <p className="font-body text-lg text-gray-500 mb-2">Thank you for reading everything.</p>
-                <p className="font-body text-lg text-gray-500 mb-2">I genuinely mean the apology.</p>
-                <p className="font-body text-lg text-gray-500">Take care of yourself, okay?</p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+              <motion.div initial={{ scale: 0.85 }} animate={{ scale: 1 }} className="text-center max-w-sm rounded-3xl p-8 bg-white text-slate-800 shadow-2xl border border-slate-200">
+                <Heart className="w-12 h-12 text-slate-400 mx-auto mb-4 fill-slate-200" />
+                <h3 className="font-serif-display text-2xl font-bold text-slate-700 mb-2">I understand ❤️</h3>
+                <p className="text-sm text-slate-600 mb-6">Thank you for reading everything. I genuinely mean the apology. Take care of yourself.</p>
+                <button
+                  onClick={() => setResponse(null)}
+                  className="px-6 py-2.5 rounded-full bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold shadow transition"
+                >
+                  Close
+                </button>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
         <Footer
-          isDark={false}
-          accentColor={themeConfig.accent}
+          isDark={isDark}
+          accentColor={cfg.accent}
           tagline="This was a demo • From my heart, to yours"
           className="mt-12"
         />
       </div>
     </div>
-  );
-}
-
-function Section({ children, dark }: { children: React.ReactNode; dark?: boolean }) {
-  return (
-    <section className="min-h-[60vh] flex items-center justify-center px-4 py-16 md:py-24">
-      <div className="w-full max-w-4xl">{children}</div>
-    </section>
   );
 }

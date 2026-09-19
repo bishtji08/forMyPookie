@@ -210,20 +210,45 @@ export default function CreateExperiencePage() {
           {step === 4 && (
             <div className="space-y-6">
               <div>
-                <h2 className="font-display text-xl font-semibold text-rose-700 mb-2">Choose a Theme</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {themes.map(([key, config]) => (
-                    <button
-                      key={key}
-                      onClick={() => update('theme', key)}
-                      className={`rounded-xl p-4 text-left border-2 transition-all ${
-                        form.theme === key ? 'border-rose-400 ring-2 ring-rose-300/30' : 'border-rose-100 hover:border-rose-200'
-                      }`}
-                    >
-                      <div className={`h-16 rounded-lg bg-gradient-to-br ${config.gradient} mb-2`} />
-                      <p className="text-sm font-medium text-rose-700">{config.name}</p>
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="font-display text-xl font-semibold text-rose-700">Choose a Theme for Receiver</h2>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-600">
+                    Active: {THEME_CONFIG[form.theme].name}
+                  </span>
+                </div>
+                <p className="text-xs text-rose-400/80 mb-3">
+                  This theme will be automatically applied to the envelope and letter when your receiver opens the link.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {themes.map(([key, config]) => {
+                    const isSelected = form.theme === key;
+                    const isDark = key === 'lavender-night' || key === 'starry-romance';
+                    return (
+                      <button
+                        type="button"
+                        key={key}
+                        onClick={() => update('theme', key)}
+                        className={`rounded-2xl p-3.5 text-left border-2 transition-all relative ${
+                          isSelected
+                            ? 'border-rose-500 bg-rose-50/80 shadow-md ring-2 ring-rose-300/40 scale-[1.02]'
+                            : 'border-rose-100 hover:border-rose-200 bg-white/70'
+                        }`}
+                      >
+                        <div className={`h-16 rounded-xl bg-gradient-to-br ${config.gradient} mb-2.5 shadow-xs flex items-center justify-center`}>
+                          <span className="text-3xl drop-shadow-sm">
+                            {key === 'pink-dream' ? '🌸' : key === 'lavender-night' ? '🌙' : key === 'sunset-love' ? '🌅' : key === 'minimal-cream' ? '✨' : '🌌'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-rose-900 truncate">{config.name}</p>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-rose-600 stroke-[3] shrink-0" />}
+                        </div>
+                        <span className={`text-[10px] inline-block mt-0.5 font-medium ${isDark ? 'text-indigo-600' : 'text-amber-600'}`}>
+                          {isDark ? 'Dark Mode' : 'Light Mode'}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
