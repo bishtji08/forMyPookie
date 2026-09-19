@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, RefreshCw, Palette
+  Heart, Sparkles, Star, RefreshCw, Palette, X, ArrowRight
 } from 'lucide-react';
-import type { Experience, Memory, ResponseStatus, ExperienceTheme } from '@/lib/types';
+import type {
+  Experience, Memory, FunnyMoment, LoveReason, GalleryItem,
+  ResponseStatus, ExperienceTheme
+} from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
 import { Footer } from '@/components/footer';
 import { ParchmentLetter } from '@/components/experience/parchment-letter';
@@ -19,13 +22,13 @@ const demoExp: Experience = {
   secure_token: 'demo',
   sender_id: '',
   receiver_id: null,
-  receiver_name: 'Pookie',
-  receiver_nickname: 'Pooks',
-  sender_name: 'Your Boy',
+  receiver_name: 'Cutie Pie',
+  receiver_nickname: 'Cuitee',
+  sender_name: 'Anuj',
   relationship: 'Girlfriend',
-  apology_message: "I'm sorry. Not the casual 'sorry yaar' kind. The real one.\n\nI know I messed up. I know I said the wrong thing at the wrong time. And I know that 'I was tired' or 'I was stressed' doesn't excuse it.\n\nYou didn't deserve that. You deserved better from me. And I want to do better.\n\nBefore this stupid little fight, there was an entire story called us. The late-night calls where we talked about nothing for hours, laughing until our stomachs hurt, and all the quiet moments where I knew you were my favorite person.\n\nI love you. Not the Instagram caption kind. The real, quiet, show-up-for-you kind.",
-  love_letter: '',
-  final_letter: 'P.S. Whatever your answer is, I just want you to smile today. Take all the time you need. You will always be special to me. ❤️',
+  apology_message: "I'm sorry. Not the casual 'sorry yaar' kind. The real one.\n\nI know I messed up. I know I said the wrong thing at the wrong time. And I know that 'I was tired' or 'I was stressed' doesn't excuse it.\n\nYou didn't deserve that. You deserved better from me. And I promise to do better.",
+  love_letter: "Before this little fight, there was an entire story called us. The late-night calls where we talked about nothing for hours, laughing until our stomachs hurt, and all the quiet moments where I knew you were my favorite person.\n\nI love you. Not the Instagram caption kind. The real, quiet, show-up-for-you kind.",
+  final_letter: "P.S. Whatever your answer is, I just want you to smile today. Take all the time you need. You will always be special to me. ❤️",
   theme: 'pink-dream',
   music_url: null,
   status: 'active',
@@ -40,9 +43,38 @@ const demoExp: Experience = {
 };
 
 const demoMemories: Memory[] = [
-  { id: '1', experience_id: 'demo', title: 'The First Date', date: '2023-01-15', location: 'Coffee Shop', media_url: '', media_type: 'image', caption: 'Spilled coffee & still got your number', category: 'first-date', sort_order: 0, created_at: '', updated_at: '' },
-  { id: '2', experience_id: 'demo', title: 'Mountain Trip', date: '2023-06-20', location: 'Mountains', media_url: '', media_type: 'image', caption: 'You made me take 400 photos & I loved it', category: 'trips', sort_order: 1, created_at: '', updated_at: '' },
-  { id: '3', experience_id: 'demo', title: 'Pizza Disaster', date: '2023-09-08', location: 'Home', media_url: '', media_type: 'image', caption: 'Burned pasta, best pizza ever', category: 'random', sort_order: 2, created_at: '', updated_at: '' },
+  { id: '1', experience_id: 'demo', title: 'The First Date', date: '2023-01-15', location: 'Corner Café', media_url: null, media_type: 'image', caption: 'Spilled coffee & still got your number', category: 'first-date', sort_order: 0, created_at: '', updated_at: '' },
+  { id: '2', experience_id: 'demo', title: 'Mountain Trip', date: '2023-06-20', location: 'High Peaks', media_url: null, media_type: 'image', caption: 'You made me take 400 photos & I loved it', category: 'trips', sort_order: 1, created_at: '', updated_at: '' },
+  { id: '3', experience_id: 'demo', title: 'Pizza Disaster', date: '2023-09-08', location: 'Living Room', media_url: null, media_type: 'image', caption: 'Burned pasta, best pizza ever', category: 'random', sort_order: 2, created_at: '', updated_at: '' },
+];
+
+const demoGallery: GalleryItem[] = [
+  { id: '1', experience_id: 'demo', media_url: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=600&q=80', media_type: 'image', caption: 'That sunset walk by the beach 🌅', category: 'trips', sort_order: 0, created_at: '' },
+  { id: '2', experience_id: 'demo', media_url: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=600&q=80', media_type: 'image', caption: 'Laughing so hard we couldn\'t breathe 😂', category: 'random', sort_order: 1, created_at: '' },
+  { id: '3', experience_id: 'demo', media_url: 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=600&q=80', media_type: 'image', caption: 'Every little coffee date with you ☕', category: 'first-date', sort_order: 2, created_at: '' },
+];
+
+const demoFunny: FunnyMoment[] = [
+  { id: '1', experience_id: 'demo', title: 'The Autocorrect Incident', description: 'You texted "I love you boob" instead of "I love you boo" and I will never let you forget it.', image_url: null, date: null, sort_order: 0, created_at: '' },
+  { id: '2', experience_id: 'demo', title: 'The Dance Battle', description: 'You challenged me to a dance battle, tripped on your own foot, and still declared yourself the winner.', image_url: null, date: null, sort_order: 1, created_at: '' },
+  { id: '3', experience_id: 'demo', title: 'The Cooking Disaster', description: 'You tried to make pasta and set off the smoke alarm. We ordered pizza and it was the best night ever.', image_url: null, date: null, sort_order: 2, created_at: '' },
+];
+
+const demoReasons: LoveReason[] = [
+  { id: '1', experience_id: 'demo', title: 'Your Real Laugh', description: 'Not the polite one. The one where your whole face scrunches up and you snort.', image_url: null, sort_order: 0, created_at: '' },
+  { id: '2', experience_id: 'demo', title: 'Your Random Habits', description: 'You hum while you think. You talk to plants. You name your pillows. All of it.', image_url: null, sort_order: 1, created_at: '' },
+  { id: '3', experience_id: 'demo', title: 'The Way You Care', description: 'You remember things I told you months ago, and check in on them every single time.', image_url: null, sort_order: 2, created_at: '' },
+  { id: '4', experience_id: 'demo', title: 'You Being Exactly You', description: 'No explanations needed. Just you, exactly the way you are.', image_url: null, sort_order: 3, created_at: '' },
+];
+
+// Simplified 6 Core Date Ideas
+const SIMPLE_DATE_IDEAS = [
+  { key: 'coffee', label: 'Coffee & Talk', emoji: '☕' },
+  { key: 'dinner', label: 'Dinner Date', emoji: '🍕' },
+  { key: 'movie', label: 'Movie Night', emoji: '🎬' },
+  { key: 'stargazing', label: 'Stargazing Night', emoji: '🔭' },
+  { key: 'walk', label: 'Sunset Walk', emoji: '🌅' },
+  { key: 'surprise', label: 'Surprise Me', emoji: '✨' },
 ];
 
 export default function DemoExperiencePage() {
@@ -52,6 +84,7 @@ export default function DemoExperiencePage() {
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [customDateInput, setCustomDateInput] = useState('');
   const [dateConfirmed, setDateConfirmed] = useState(false);
+  const [lightboxItem, setLightboxItem] = useState<{ url: string; caption?: string } | null>(null);
 
   const handleOpen = () => setOpened(true);
 
@@ -103,7 +136,7 @@ export default function DemoExperiencePage() {
       <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${cfg.unopenedBg} px-4 relative overflow-hidden transition-colors duration-500`}>
         {themeSwitcherBar}
 
-        {/* Ambient floating 3D hearts & dreamy background elements */}
+        {/* Ambient floating 3D hearts background */}
         <FloatingAmbientHearts theme={selectedTheme} />
 
         <InteractiveEnvelope
@@ -117,7 +150,7 @@ export default function DemoExperiencePage() {
     );
   }
 
-  // OPENED VIEW (Matches preview.html exactly: 3 clean, non-bloated romantic sections)
+  // OPENED VIEW: Complete, cohesive story adapting across all themes
   return (
     <div className={`min-h-screen bg-gradient-to-b ${cfg.openedBg} ${cfg.textColor} transition-colors duration-500 relative`}>
       {themeSwitcherBar}
@@ -130,22 +163,40 @@ export default function DemoExperiencePage() {
 
       <div className="relative z-10 pt-20 pb-16 px-4 sm:px-8 w-full max-w-3xl mx-auto space-y-12">
         
-        {/* SECTION 1: The Heartfelt Stationery Letter */}
-        <section>
-          <ParchmentLetter
-            badge="To the love of my life"
-            title="Things I Should Have Said Properly…"
-            senderName={demoExp.sender_name}
-            receiverName={demoExp.receiver_name}
-            content={demoExp.apology_message}
-            secretNote="P.S. You deserve the sweetest smile today. No matter what, thank you for being the most special part of my life. ❤️"
-            theme={selectedTheme}
-            isDark={isDark}
-            accentColor={cfg.accent}
-          />
-        </section>
+        {/* 1. THE APOLOGY MESSAGE (If provided by sender) */}
+        {demoExp.apology_message && (
+          <section>
+            <ParchmentLetter
+              badge="From the bottom of my heart"
+              title="Things I Should Have Said Properly…"
+              senderName={demoExp.sender_name}
+              receiverName={demoExp.receiver_name}
+              content={demoExp.apology_message}
+              theme={selectedTheme}
+              isDark={isDark}
+              accentColor={cfg.accent}
+            />
+          </section>
+        )}
 
-        {/* SECTION 2: Sweet Memories & Inside Jokes (Compact, Non-Bloated) */}
+        {/* 2. THE LOVE LETTER & FINAL MESSAGE (If provided by sender) */}
+        {demoExp.love_letter && (
+          <section>
+            <ParchmentLetter
+              badge="Beyond any fight, there is us"
+              title="What You Truly Mean To Me ❤️"
+              senderName={demoExp.sender_name}
+              receiverName={demoExp.receiver_name}
+              content={demoExp.love_letter}
+              secretNote={demoExp.final_letter || undefined}
+              theme={selectedTheme}
+              isDark={isDark}
+              accentColor={cfg.accent}
+            />
+          </section>
+        )}
+
+        {/* 3. OUR FAVORITE MEMORIES 📸 (Polaroids) */}
         <section>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -153,59 +204,155 @@ export default function DemoExperiencePage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold text-center mb-6 tracking-tight ${cfg.titleColor}`}>
-              Our Favorite Memories 📸
-            </h3>
+            <div className="text-center mb-6">
+              <p className="font-script text-2xl text-rose-500 mb-1">Remember these moments?</p>
+              <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                Our Favorite Memories 📸
+              </h3>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Polaroid 1 */}
-              <motion.div
-                whileHover={{ scale: 1.04, rotate: 0 }}
-                className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-1 transition-all text-left relative"
-              >
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-rose-200/60 rounded-xs rotate-2 pointer-events-none" />
-                <div className="h-32 sm:h-36 bg-rose-100/70 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
-                  ☕
-                </div>
-                <p className="font-bold text-sm text-rose-950 mb-0.5">The First Date</p>
-                <p className="font-script text-base text-rose-600 leading-snug">
-                  Spilled coffee & still got your number
-                </p>
-              </motion.div>
-
-              {/* Polaroid 2 */}
-              <motion.div
-                whileHover={{ scale: 1.04, rotate: 0 }}
-                className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform rotate-2 transition-all text-left relative"
-              >
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-purple-200/60 rounded-xs -rotate-2 pointer-events-none" />
-                <div className="h-32 sm:h-36 bg-purple-100/70 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
-                  ⛰️
-                </div>
-                <p className="font-bold text-sm text-rose-950 mb-0.5">Mountain Trip</p>
-                <p className="font-script text-base text-rose-600 leading-snug">
-                  You made me take 400 photos & I loved it
-                </p>
-              </motion.div>
-
-              {/* Polaroid 3 */}
-              <motion.div
-                whileHover={{ scale: 1.04, rotate: 0 }}
-                className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-2 transition-all text-left relative"
-              >
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-amber-200/60 rounded-xs rotate-1 pointer-events-none" />
-                <div className="h-32 sm:h-36 bg-amber-100/70 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
-                  🍕
-                </div>
-                <p className="font-bold text-sm text-rose-950 mb-0.5">Pizza Disaster</p>
-                <p className="font-script text-base text-rose-600 leading-snug">
-                  Burned pasta, best pizza ever
-                </p>
-              </motion.div>
+              {demoMemories.map((mem, i) => (
+                <motion.div
+                  key={mem.id}
+                  whileHover={{ scale: 1.04, rotate: 0 }}
+                  className={`bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transition-all text-left relative ${
+                    i === 0 ? 'transform -rotate-1' : i === 1 ? 'transform rotate-2' : 'transform -rotate-2'
+                  }`}
+                >
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-rose-200/60 rounded-xs rotate-2 pointer-events-none" />
+                  <div className="h-32 sm:h-36 bg-gradient-to-br from-rose-100/80 to-purple-100/80 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                    {i === 0 ? '☕' : i === 1 ? '⛰️' : '🍕'}
+                  </div>
+                  <p className="font-bold text-sm text-rose-950 mb-0.5">{mem.title}</p>
+                  <p className="font-script text-base text-rose-600 leading-snug">
+                    {mem.caption}
+                  </p>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
         </section>
 
-        {/* SECTION 3: The Invitation & Inline Date Picker */}
+        {/* 4. PHOTO GALLERY 🖼️ (Evidence we're actually cute together) */}
+        {demoGallery.length > 0 && (
+          <section>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="text-center mb-6">
+                <p className="font-script text-2xl text-rose-500 mb-1">Proof we belong together</p>
+                <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                  Evidence That We Are Cute 🖼️
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {demoGallery.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    whileHover={{ scale: 1.03 }}
+                    onClick={() => setLightboxItem({ url: item.media_url, caption: item.caption })}
+                    className="relative rounded-2xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10 group cursor-pointer aspect-4/3 bg-black/10"
+                  >
+                    <img
+                      src={item.media_url}
+                      alt={item.caption || 'Memory'}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    {item.caption && (
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 text-left">
+                        <p className="font-script text-white text-base leading-snug drop-shadow-sm">
+                          {item.caption}
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* 5. FUNNY MOMENTS & INSIDE JOKES 😂 */}
+        {demoFunny.length > 0 && (
+          <section>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="text-center mb-6">
+                <p className="font-script text-2xl text-rose-500 mb-1">Inside jokes only we understand</p>
+                <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                  Our Shared Brain Cells 😂❤️
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {demoFunny.map((f) => (
+                  <motion.div
+                    key={f.id}
+                    whileHover={{ y: -3 }}
+                    className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.cardBg}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-serif-display text-base font-bold">{f.title}</h4>
+                      <span className="text-xl">😜</span>
+                    </div>
+                    <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-purple-100/80' : 'text-slate-600'}`}>
+                      {f.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* 6. REASONS I LOVE YOU ❤️ */}
+        {demoReasons.length > 0 && (
+          <section>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="text-center mb-6">
+                <p className="font-script text-2xl text-rose-500 mb-1">Since we&apos;re here…</p>
+                <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                  Reasons I Love You ❤️
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {demoReasons.map((r) => (
+                  <motion.div
+                    key={r.id}
+                    whileHover={{ y: -3 }}
+                    className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.cardBg}`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <h4 className="font-serif-display text-base font-bold">{r.title}</h4>
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    </div>
+                    <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-purple-100/80' : 'text-slate-600'}`}>
+                      {r.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* 7. THE INVITATION & SIMPLIFIED DATE PICKER (4-6 options + manual enter) */}
         <section>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -260,7 +407,7 @@ export default function DemoExperiencePage() {
               </button>
             </div>
 
-            {/* INLINE EXPANSION: On YES */}
+            {/* INLINE EXPANSION: On YES (Clean 6 ideas + manual enter) */}
             <AnimatePresence>
               {response === 'yes' && (
                 <motion.div
@@ -312,25 +459,16 @@ export default function DemoExperiencePage() {
                           </span>
                         </div>
 
-                        {/* Date Ideas Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                          {[
-                            { key: 'coffee', label: 'Coffee Date', emoji: '☕' },
-                            { key: 'dinner', label: 'Dinner & Wine', emoji: '🍕' },
-                            { key: 'movie', label: 'Movie Night', emoji: '🎬' },
-                            { key: 'stargazing', label: 'Stargazing', emoji: '🔭' },
-                            { key: 'walk', label: 'Sunset Walk', emoji: '🌅' },
-                            { key: 'drive', label: 'Late Drive', emoji: '🚗' },
-                            { key: 'cook', label: 'Cook Together', emoji: '🍝' },
-                            { key: 'surprise', label: 'Surprise Me', emoji: '✨' },
-                          ].map((item) => {
+                        {/* Exactly 6 Clean Date Ideas */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-4">
+                          {SIMPLE_DATE_IDEAS.map((item) => {
                             const isSelected = selectedActivity === item.key;
                             return (
                               <button
                                 key={item.key}
                                 type="button"
                                 onClick={() => setSelectedActivity(item.key)}
-                                className={`p-2.5 rounded-xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1 border ${
+                                className={`p-3 rounded-xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1 border ${
                                   isSelected
                                     ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-[1.03]'
                                     : isDark
@@ -338,16 +476,16 @@ export default function DemoExperiencePage() {
                                     : 'bg-white text-slate-700 hover:bg-rose-100/60 border-rose-200/80'
                                 }`}
                               >
-                                <span className="text-lg">{item.emoji}</span>
+                                <span className="text-xl">{item.emoji}</span>
                                 <span className="leading-tight">{item.label}</span>
                               </button>
                             );
                           })}
                         </div>
 
-                        {/* Custom Date Input */}
-                        <div className="mb-4 pt-2 border-t border-black/10 dark:border-white/10">
-                          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1 opacity-75">
+                        {/* Manual Date Suggestion Box */}
+                        <div className="mb-4 pt-3 border-t border-black/10 dark:border-white/10">
+                          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5 opacity-75">
                             Or Suggest Your Own Date Idea ✨
                           </label>
                           <div className="flex gap-2">
@@ -363,7 +501,7 @@ export default function DemoExperiencePage() {
                                   }
                                 }
                               }}
-                              placeholder="e.g. Picnic by the lake, Bookstore date..."
+                              placeholder="e.g. Cooking together, late night drive..."
                               className={`flex-1 px-3 py-2 rounded-xl text-xs outline-none border focus:ring-2 focus:ring-rose-400 ${
                                 isDark
                                   ? 'bg-white/10 border-white/20 text-white placeholder-white/40'
@@ -500,6 +638,40 @@ export default function DemoExperiencePage() {
             </AnimatePresence>
           </motion.div>
         </section>
+
+        {/* Lightbox for Gallery Photos */}
+        <AnimatePresence>
+          {lightboxItem && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLightboxItem(null)}
+              className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm"
+            >
+              <button
+                type="button"
+                className="absolute top-4 right-4 text-white hover:text-rose-300 transition p-2 rounded-full bg-white/10"
+                onClick={() => setLightboxItem(null)}
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <motion.img
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                src={lightboxItem.url}
+                alt={lightboxItem.caption || 'Memory'}
+                className="max-w-full max-h-[80vh] rounded-2xl object-contain shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+              {lightboxItem.caption && (
+                <p className="absolute bottom-6 left-1/2 -translate-x-1/2 font-script text-white text-lg sm:text-xl text-center px-4 py-1.5 bg-black/50 backdrop-blur-md rounded-full max-w-[90vw]">
+                  {lightboxItem.caption}
+                </p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Footer */}
         <Footer

@@ -5,12 +5,15 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, Sparkles, X, Volume2, VolumeX, Play, Pause, Lock, ArrowLeft, ArrowRight, MessageCircle
+  Heart, Sparkles, X, Volume2, VolumeX, Play, Pause, Lock, ArrowLeft, ArrowRight, MessageCircle, Star
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
-import type { Experience, Memory, ResponseStatus, ExperienceTheme } from '@/lib/types';
+import type {
+  Experience, Memory, FunnyMoment, LoveReason, GalleryItem,
+  ResponseStatus, ExperienceTheme
+} from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
 import { GoogleButton } from '@/components/auth/google-button';
 import { Footer } from '@/components/footer';
@@ -18,9 +21,19 @@ import { isVideoUrl } from '@/lib/utils';
 import { ParchmentLetter } from '@/components/experience/parchment-letter';
 import { InteractiveEnvelope } from '@/components/experience/interactive-envelope';
 import { FloatingReactions } from '@/components/experience/floating-reactions';
-import { PRESET_DATE_IDEAS, DATE_CATEGORIES, formatCustomDateIdea } from '@/lib/date-ideas';
+import { formatCustomDateIdea } from '@/lib/date-ideas';
 import { GlossyHeart } from '@/components/experience/glossy-heart';
 import { FloatingAmbientHearts } from '@/components/experience/floating-ambient-hearts';
+
+// Simplified 6 Core Date Ideas
+const SIMPLE_DATE_IDEAS = [
+  { key: 'coffee', label: 'Coffee & Talk', emoji: '☕' },
+  { key: 'dinner', label: 'Dinner Date', emoji: '🍕' },
+  { key: 'movie', label: 'Movie Night', emoji: '🎬' },
+  { key: 'stargazing', label: 'Stargazing Night', emoji: '🔭' },
+  { key: 'walk', label: 'Sunset Walk', emoji: '🌅' },
+  { key: 'surprise', label: 'Surprise Me', emoji: '✨' },
+];
 
 export default function LoveExperiencePage() {
   const { token } = useParams();
@@ -31,18 +44,20 @@ export default function LoveExperiencePage() {
   const [submittingDate, setSubmittingDate] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [funnyMoments, setFunnyMoments] = useState<FunnyMoment[]>([]);
+  const [loveReasons, setLoveReasons] = useState<LoveReason[]>([]);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [lightboxItem, setLightboxItem] = useState<{ url: string; caption?: string; isVideo?: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [opened, setOpened] = useState(false);
   const [response, setResponse] = useState<ResponseStatus | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [customDateInput, setCustomDateInput] = useState('');
-  const [dateCategory, setDateCategory] = useState<string>('all');
   const [dateNote, setDateNote] = useState('');
   const [dateConfirmed, setDateConfirmed] = useState(false);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(false);
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [heartClicks, setHeartClicks] = useState(0);
   const [easterEgg, setEasterEgg] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -89,15 +104,19 @@ export default function LoveExperiencePage() {
         }
       }
 
-      const memRes = await supabase
-        .from('memories')
-        .select('*')
-        .eq('experience_id', expData.id)
-        .order('sort_order');
+      const [memRes, funnyRes, reasonsRes, galleryRes] = await Promise.all([
+        supabase.from('memories').select('*').eq('experience_id', expData.id).order('sort_order'),
+        supabase.from('funny_moments').select('*').eq('experience_id', expData.id).order('sort_order'),
+        supabase.from('love_reasons').select('*').eq('experience_id', expData.id).order('sort_order'),
+        supabase.from('gallery_items').select('*').eq('experience_id', expData.id).order('sort_order'),
+      ]);
 
       if (!isMounted) return;
 
       setMemories((memRes.data as Memory[]) || []);
+      setFunnyMoments((funnyRes.data as FunnyMoment[]) || []);
+      setLoveReasons((reasonsRes.data as LoveReason[]) || []);
+      setGallery((galleryRes.data as GalleryItem[]) || []);
       setLoading(false);
     })();
 
@@ -464,22 +483,40 @@ export default function LoveExperiencePage() {
       {/* Content sections: Single Cohesive Flow matching preview.html */}
       <div className="relative z-10 pt-20 pb-16 px-4 sm:px-8 w-full max-w-3xl mx-auto space-y-12">
         
-        {/* SECTION 1: The Heartfelt Stationery Letter */}
-        <section>
-          <ParchmentLetter
-            badge="To the love of my life"
-            title={exp?.apology_message ? 'Things I Should Have Said Properly…' : 'A Letter From My Heart…'}
-            senderName={exp?.sender_name}
-            receiverName={exp?.receiver_name}
-            content={exp?.apology_message || exp?.love_letter || exp?.final_letter || "I'm sorry. Not the casual sorry yaar kind. The real one. You mean the world to me."}
-            secretNote={exp?.final_letter || "P.S. You deserve the sweetest smile today. No matter what, thank you for being the most special part of my life. ❤️"}
-            theme={theme}
-            isDark={isDark}
-            accentColor={cfg.accent}
-          />
-        </section>
+        {/* 1. THE APOLOGY MESSAGE (If provided by sender) */}
+        {exp?.apology_message && (
+          <section>
+            <ParchmentLetter
+              badge="From the bottom of my heart"
+              title="Things I Should Have Said Properly…"
+              senderName={exp.sender_name}
+              receiverName={exp.receiver_name}
+              content={exp.apology_message}
+              theme={theme}
+              isDark={isDark}
+              accentColor={cfg.accent}
+            />
+          </section>
+        )}
 
-        {/* SECTION 2: Our Favorite Memories 📸 */}
+        {/* 2. THE LOVE LETTER & FINAL MESSAGE */}
+        {(exp?.love_letter || !exp?.apology_message) && (
+          <section>
+            <ParchmentLetter
+              badge="Beyond any fight, there is us"
+              title="What You Truly Mean To Me ❤️"
+              senderName={exp?.sender_name}
+              receiverName={exp?.receiver_name}
+              content={exp?.love_letter || "Before this little fight, there was an entire story called us. You mean the world to me and I love you with all my heart."}
+              secretNote={exp?.final_letter || "P.S. Whatever happens, you deserve the sweetest smile today. You will always be special to me. ❤️"}
+              theme={theme}
+              isDark={isDark}
+              accentColor={cfg.accent}
+            />
+          </section>
+        )}
+
+        {/* 3. OUR FAVORITE MEMORIES 📸 (Polaroids) */}
         <section>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -487,9 +524,12 @@ export default function LoveExperiencePage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold text-center mb-6 tracking-tight ${cfg.titleColor}`}>
-              Our Favorite Memories 📸
-            </h3>
+            <div className="text-center mb-6">
+              <p className="font-script text-2xl text-rose-500 mb-1">Remember these moments?</p>
+              <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                Our Favorite Memories 📸
+              </h3>
+            </div>
 
             {/* If sender uploaded custom memories, display them */}
             {memories.length > 0 ? (
@@ -504,7 +544,9 @@ export default function LoveExperiencePage() {
                         i % 3 === 0 ? 'transform -rotate-1' : i % 3 === 1 ? 'transform rotate-2' : 'transform -rotate-2'
                       }`}
                       onClick={() => {
-                        if (mem.media_url) setLightboxIdx(i);
+                        if (mem.media_url) {
+                          setLightboxItem({ url: mem.media_url, caption: mem.caption || mem.title, isVideo: isVid });
+                        }
                       }}
                     >
                       <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-rose-200/60 rounded-xs rotate-2 pointer-events-none" />
@@ -538,7 +580,7 @@ export default function LoveExperiencePage() {
                   className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-1 transition-all text-left relative"
                 >
                   <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-rose-200/60 rounded-xs rotate-2 pointer-events-none" />
-                  <div className="h-32 sm:h-36 bg-rose-100/70 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                  <div className="h-32 sm:h-36 bg-gradient-to-br from-rose-100/80 to-purple-100/80 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
                     ☕
                   </div>
                   <p className="font-bold text-sm text-rose-950 mb-0.5">The First Date</p>
@@ -552,7 +594,7 @@ export default function LoveExperiencePage() {
                   className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform rotate-2 transition-all text-left relative"
                 >
                   <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-purple-200/60 rounded-xs -rotate-2 pointer-events-none" />
-                  <div className="h-32 sm:h-36 bg-purple-100/70 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                  <div className="h-32 sm:h-36 bg-gradient-to-br from-purple-100/80 to-pink-100/80 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
                     ⛰️
                   </div>
                   <p className="font-bold text-sm text-rose-950 mb-0.5">Mountain Trip</p>
@@ -566,7 +608,7 @@ export default function LoveExperiencePage() {
                   className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-2 transition-all text-left relative"
                 >
                   <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 bg-amber-200/60 rounded-xs rotate-1 pointer-events-none" />
-                  <div className="h-32 sm:h-36 bg-amber-100/70 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
+                  <div className="h-32 sm:h-36 bg-gradient-to-br from-amber-100/80 to-rose-100/80 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner">
                     🍕
                   </div>
                   <p className="font-bold text-sm text-rose-950 mb-0.5">Pizza Disaster</p>
@@ -579,7 +621,129 @@ export default function LoveExperiencePage() {
           </motion.div>
         </section>
 
-        {/* SECTION 3: The Invitation & Inline Date Picker */}
+        {/* 4. PHOTO GALLERY 🖼️ (If uploaded by sender) */}
+        {gallery.length > 0 && (
+          <section>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="text-center mb-6">
+                <p className="font-script text-2xl text-rose-500 mb-1">Proof we belong together</p>
+                <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                  Evidence That We Are Cute 🖼️
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {gallery.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    whileHover={{ scale: 1.03 }}
+                    onClick={() => setLightboxItem({ url: item.media_url, caption: item.caption, isVideo: item.media_type === 'video' })}
+                    className="relative rounded-2xl overflow-hidden shadow-lg border border-black/10 dark:border-white/10 group cursor-pointer aspect-4/3 bg-black/10"
+                  >
+                    {item.media_type === 'video' ? (
+                      <video src={item.media_url} playsInline preload="metadata" className="w-full h-full object-cover" />
+                    ) : (
+                      <img
+                        src={item.media_url}
+                        alt={item.caption || 'Memory'}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    )}
+                    {item.caption && (
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 text-left">
+                        <p className="font-script text-white text-base leading-snug drop-shadow-sm">
+                          {item.caption}
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* 5. FUNNY MOMENTS & INSIDE JOKES 😂 (If added by sender) */}
+        {funnyMoments.length > 0 && (
+          <section>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="text-center mb-6">
+                <p className="font-script text-2xl text-rose-500 mb-1">Inside jokes only we understand</p>
+                <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                  Our Shared Brain Cells 😂❤️
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {funnyMoments.map((f) => (
+                  <motion.div
+                    key={f.id}
+                    whileHover={{ y: -3 }}
+                    className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.cardBg}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-serif-display text-base font-bold">{f.title}</h4>
+                      <span className="text-xl">😜</span>
+                    </div>
+                    <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-purple-100/80' : 'text-slate-600'}`}>
+                      {f.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* 6. REASONS I LOVE YOU ❤️ (If added by sender) */}
+        {loveReasons.length > 0 && (
+          <section>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="text-center mb-6">
+                <p className="font-script text-2xl text-rose-500 mb-1">Since we&apos;re here…</p>
+                <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                  Reasons I Love You ❤️
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {loveReasons.map((r) => (
+                  <motion.div
+                    key={r.id}
+                    whileHover={{ y: -3 }}
+                    className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.cardBg}`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <h4 className="font-serif-display text-base font-bold">{r.title}</h4>
+                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    </div>
+                    <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-purple-100/80' : 'text-slate-600'}`}>
+                      {r.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </section>
+        )}
+
+        {/* 7. THE INVITATION & SIMPLIFIED DATE PICKER (4-6 options + manual enter) */}
         <section>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -634,7 +798,7 @@ export default function LoveExperiencePage() {
               </button>
             </div>
 
-            {/* INLINE EXPANSION: On YES */}
+            {/* INLINE EXPANSION: On YES (Clean 4-6 ideas + manual enter) */}
             <AnimatePresence>
               {response === 'yes' && (
                 <motion.div
@@ -701,109 +865,43 @@ export default function LoveExperiencePage() {
                           </span>
                         </div>
 
-                        {/* Category Filter Pills */}
-                        <div className="flex gap-1 overflow-x-auto pb-2 mb-3 scrollbar-hide">
-                          <button
-                            type="button"
-                            onClick={() => setDateCategory('all')}
-                            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
-                              dateCategory === 'all'
-                                ? 'bg-rose-500 text-white shadow-xs'
-                                : isDark
-                                ? 'bg-white/10 text-purple-200 hover:bg-white/20'
-                                : 'bg-white text-rose-600 hover:bg-rose-100 border border-rose-200/60'
-                            }`}
-                          >
-                            🌟 All
-                          </button>
-                          {Object.entries(DATE_CATEGORIES).map(([catKey, cat]) => (
-                            <button
-                              type="button"
-                              key={catKey}
-                              onClick={() => setDateCategory(catKey)}
-                              className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
-                                dateCategory === catKey
-                                  ? 'bg-rose-500 text-white shadow-xs'
-                                  : isDark
-                                  ? 'bg-white/10 text-purple-200 hover:bg-white/20'
-                                  : 'bg-white text-rose-600 hover:bg-rose-100 border border-rose-200/60'
-                              }`}
-                            >
-                              {cat.emoji} {cat.label}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Date Ideas Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                        {/* Simplified 4-6 Date Ideas Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-4">
                           {(() => {
                             const offeredKeys = exp?.date_options || [];
-                            const pool = PRESET_DATE_IDEAS.filter(
-                              (p) => dateCategory === 'all' || p.category === dateCategory
-                            );
-                            const customOffered = dateCategory === 'all'
-                              ? offeredKeys.filter((k) => !PRESET_DATE_IDEAS.some((p) => p.key === k))
-                              : [];
+                            const dateList = offeredKeys.length > 0
+                              ? offeredKeys.slice(0, 6).map((k) => {
+                                  const info = formatCustomDateIdea(k);
+                                  return { key: k, label: info.label, emoji: info.emoji };
+                                })
+                              : SIMPLE_DATE_IDEAS;
 
-                            return (
-                              <>
-                                {customOffered.map((cOpt) => {
-                                  const info = formatCustomDateIdea(cOpt);
-                                  const isSelected = selectedActivity === cOpt;
-                                  return (
-                                    <button
-                                      key={cOpt}
-                                      type="button"
-                                      onClick={() => setSelectedActivity(cOpt)}
-                                      className={`p-2.5 rounded-xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1 border ${
-                                        isSelected
-                                          ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-[1.03]'
-                                          : isDark
-                                          ? 'bg-white/5 text-purple-100 hover:bg-white/10 border-purple-400/20'
-                                          : 'bg-white text-slate-700 hover:bg-rose-100/60 border-rose-200/80'
-                                      }`}
-                                    >
-                                      <span className="text-lg">{info.emoji}</span>
-                                      <span className="leading-tight">{info.label}</span>
-                                    </button>
-                                  );
-                                })}
-                                {pool.map((item) => {
-                                  const isSelected = selectedActivity === item.key;
-                                  const isOfferedBySender = offeredKeys.includes(item.key);
-                                  return (
-                                    <button
-                                      key={item.key}
-                                      type="button"
-                                      onClick={() => setSelectedActivity(item.key)}
-                                      className={`p-2.5 rounded-xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1 border relative ${
-                                        isSelected
-                                          ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-[1.03]'
-                                          : isOfferedBySender
-                                          ? 'bg-rose-50 text-rose-800 border-rose-300 ring-1 ring-rose-200'
-                                          : isDark
-                                          ? 'bg-white/5 text-purple-100 hover:bg-white/10 border-purple-400/20'
-                                          : 'bg-white text-slate-700 hover:bg-rose-100/60 border-rose-200/80'
-                                      }`}
-                                    >
-                                      {isOfferedBySender && (
-                                        <span className="absolute top-1 right-1 text-[8px] font-bold px-1 py-0.2 rounded-full bg-rose-100 text-rose-600 uppercase">
-                                          His Pick
-                                        </span>
-                                      )}
-                                      <span className="text-lg">{item.emoji}</span>
-                                      <span className="leading-tight">{item.label}</span>
-                                    </button>
-                                  );
-                                })}
-                              </>
-                            );
+                            return dateList.map((item) => {
+                              const isSelected = selectedActivity === item.key;
+                              return (
+                                <button
+                                  key={item.key}
+                                  type="button"
+                                  onClick={() => setSelectedActivity(item.key)}
+                                  className={`p-3 rounded-2xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1.5 border relative ${
+                                    isSelected
+                                      ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-[1.02]'
+                                      : isDark
+                                      ? 'bg-white/5 text-purple-100 hover:bg-white/10 border-purple-400/20'
+                                      : 'bg-white text-slate-700 hover:bg-rose-100/60 border-rose-200/80 shadow-2xs'
+                                  }`}
+                                >
+                                  <span className="text-2xl">{item.emoji}</span>
+                                  <span className="leading-tight">{item.label}</span>
+                                </button>
+                              );
+                            });
                           })()}
                         </div>
 
                         {/* Custom Date Input */}
                         <div className="mb-4 pt-2 border-t border-black/10 dark:border-white/10">
-                          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1 opacity-75">
+                          <label className="text-[11px] font-bold uppercase tracking-wider block mb-1.5 opacity-75">
                             Or Suggest Your Own Date Idea ✨
                           </label>
                           <div className="flex gap-2">
@@ -820,7 +918,7 @@ export default function LoveExperiencePage() {
                                 }
                               }}
                               placeholder="e.g. Stargazing on the roof 🔭, Baking together 🍪"
-                              className={`flex-1 px-3 py-2 rounded-xl text-xs outline-none border focus:ring-2 focus:ring-rose-400 ${
+                              className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs outline-none border focus:ring-2 focus:ring-rose-400 ${
                                 isDark
                                   ? 'bg-white/10 border-white/20 text-white placeholder-white/40'
                                   : 'bg-white border-rose-200 text-slate-800 placeholder-slate-400'
@@ -835,7 +933,7 @@ export default function LoveExperiencePage() {
                                 }
                               }}
                               disabled={!customDateInput.trim()}
-                              className="px-3.5 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold disabled:opacity-40 transition"
+                              className="px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold disabled:opacity-40 transition shadow-xs"
                             >
                               Pick
                             </button>
@@ -843,10 +941,13 @@ export default function LoveExperiencePage() {
                         </div>
 
                         {selectedActivity && (
-                          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-400/30">
+                          <div className="mb-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-400/30">
                             <div className="flex items-center justify-between mb-1.5">
                               <p className="text-xs font-semibold text-rose-500">
-                                Chosen Date: <span className="font-bold">{formatCustomDateIdea(selectedActivity).emoji} {formatCustomDateIdea(selectedActivity).label}</span>
+                                Chosen Date:{' '}
+                                <span className="font-bold">
+                                  {formatCustomDateIdea(selectedActivity).emoji} {formatCustomDateIdea(selectedActivity).label}
+                                </span>
                               </p>
                               <button
                                 type="button"
@@ -997,47 +1098,45 @@ export default function LoveExperiencePage() {
           </motion.div>
         </section>
 
-        {/* Lightbox Viewer (when clicked on any memory with photo/video) */}
+        {/* Lightbox Viewer (when clicked on any memory or gallery item) */}
         <AnimatePresence>
-          {lightboxIdx !== null && memories[lightboxIdx] && (
+          {lightboxItem && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setLightboxIdx(null)}
+              onClick={() => setLightboxItem(null)}
               className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm"
             >
               <button
                 className="absolute top-4 right-4 text-white hover:text-rose-300 transition p-2 rounded-full bg-white/10"
-                onClick={() => setLightboxIdx(null)}
+                onClick={() => setLightboxItem(null)}
                 aria-label="Close"
               >
                 <X className="w-6 h-6" />
               </button>
-              {memories[lightboxIdx].media_url && (
-                isVideoUrl(memories[lightboxIdx].media_url!) ? (
-                  <video
-                    src={memories[lightboxIdx].media_url!}
-                    controls
-                    autoPlay
-                    playsInline
-                    className="max-w-full max-h-[80vh] rounded-xl shadow-2xl"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <motion.img
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    src={memories[lightboxIdx].media_url!}
-                    alt={memories[lightboxIdx].title}
-                    className="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                )
+              {lightboxItem.isVideo ? (
+                <video
+                  src={lightboxItem.url}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="max-w-full max-h-[80vh] rounded-xl shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <motion.img
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  src={lightboxItem.url}
+                  alt={lightboxItem.caption || 'Enlarged photo'}
+                  className="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                />
               )}
-              {memories[lightboxIdx].caption && (
+              {lightboxItem.caption && (
                 <p className="absolute bottom-6 left-1/2 -translate-x-1/2 font-script text-white text-lg sm:text-xl text-center px-4 py-1.5 bg-black/50 backdrop-blur-md rounded-full max-w-[90vw]">
-                  {memories[lightboxIdx].caption}
+                  {lightboxItem.caption}
                 </p>
               )}
             </motion.div>
