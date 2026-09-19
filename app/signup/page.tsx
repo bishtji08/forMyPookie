@@ -109,17 +109,19 @@ export default function SignupPage() {
           role: finalRole,
         });
 
+        const safeRedirect = getSafeRedirect(redirectUrl, '');
         // If this is a receiver signing up from a love link, link the experience immediately
-        if (finalRole === 'receiver' && redirectUrl) {
-          const match = redirectUrl.match(/\/love\/([^\/\?]+)/);
+        if (safeRedirect.startsWith('/love/') && data.user) {
+          const match = safeRedirect.match(/\/love\/([^\/\?]+)/);
           if (match && match[1]) {
+            const idOrToken = match[1];
             await supabase
               .from('experiences')
               .update({
                 receiver_id: data.user.id,
                 receiver_name: name.trim(),
               })
-              .eq('secure_token', match[1])
+              .or(`id.eq.${idOrToken},secure_token.eq.${idOrToken}`)
               .is('receiver_id', null);
           }
         }

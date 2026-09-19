@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FileUpload } from '@/components/upload/file-upload';
 import type { Experience, Memory, FunnyMoment, LoveReason, GalleryItem, ExperienceTheme } from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
-import { getAppUrl, isVideoUrl } from '@/lib/utils';
+import { getAppUrl, isVideoUrl, getRelationshipShareUrl } from '@/lib/utils';
 import { PRESET_DATE_IDEAS, DATE_CATEGORIES, formatCustomDateIdea } from '@/lib/date-ideas';
 
 type Tab = 'details' | 'receiver' | 'memories' | 'funny' | 'reasons' | 'gallery' | 'share';
@@ -162,19 +162,48 @@ export default function ExperienceDetailPage() {
     }
   };
 
-  const appUrl = getAppUrl() || (typeof window !== 'undefined' ? window.location.origin : '');
-  const shareUrl = exp ? `${appUrl}/love/${exp.secure_token}` : '';
+  const shareUrl = exp?.id ? getRelationshipShareUrl(exp.id) : '';
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast({ title: 'Link copied! 💌' });
+  const verifyExpExists = async () => {
+    if (!exp?.id) return false;
+    const { data, error } = await supabase
+      .from('experiences')
+      .select('id')
+      .eq('id', exp.id)
+      .maybeSingle();
+    return Boolean(data && !error);
   };
 
-  const downloadQr = () => {
+  const copyLink = async () => {
+    if (!exp?.id) return;
+    const exists = await verifyExpExists();
+    if (!exists) {
+      toast({
+        title: 'Experience not found',
+        description: 'Please make sure this experience exists in the database before sharing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const url = getRelationshipShareUrl(exp.id);
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast({ title: 'Link copied! 💌', description: 'Stable relationship link copied.' });
+  };
+
+  const downloadQr = async () => {
     const canvas = document.getElementById(`qr-canvas-detail`) as HTMLCanvasElement;
-    if (!canvas || !exp) return;
+    if (!canvas || !exp?.id) return;
+    const exists = await verifyExpExists();
+    if (!exists) {
+      toast({
+        title: 'Cannot download QR',
+        description: 'Experience not found in database.',
+        variant: 'destructive',
+      });
+      return;
+    }
     const pngUrl = canvas.toDataURL('image/png');
     const downloadLink = document.createElement('a');
     downloadLink.href = pngUrl;
@@ -186,13 +215,23 @@ export default function ExperienceDetailPage() {
   };
 
   const shareNative = async () => {
-    if (!exp) return;
+    if (!exp?.id) return;
+    const exists = await verifyExpExists();
+    if (!exists) {
+      toast({
+        title: 'Experience not found',
+        description: 'Experience does not exist in the database.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const url = getRelationshipShareUrl(exp.id);
     if (navigator.share) {
       try {
         await navigator.share({
           title: `For ${exp.receiver_name || 'My Pookie'} ❤️`,
           text: `Pookie... I made something special for you. Open it? 💌`,
-          url: shareUrl,
+          url: url,
         });
       } catch {
         // User dismissed
@@ -331,7 +370,7 @@ export default function ExperienceDetailPage() {
                 {exp.status === 'active' ? 'Unpublish' : 'Publish'}
               </button>
               <a
-                href={`/love/${exp.secure_token}`}
+                href={`/love/${exp.id}`}
                 target="_blank"
                 className="p-2 rounded-xl bg-white/60 text-rose-500 hover:bg-white transition"
               >
@@ -921,13 +960,13 @@ export default function ExperienceDetailPage() {
                 </div>
               </div>
 
-              {/* Lock Protection Explanation */}
+              {/* Direct Access Explanation */}
               <div className="flex items-start gap-3 p-4 rounded-xl bg-rose-50/70 border border-rose-200/60">
-                <Lock className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                <Heart className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-rose-700">Lock Protection Active</p>
+                  <p className="text-sm font-semibold text-rose-700">Instant Romantic Access</p>
                   <p className="text-xs text-rose-600/80 mt-0.5 leading-relaxed">
-                    When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR code, she will be asked to <strong>sign up or log in first</strong> before unlocking the letter. Once logged in, she can read everything and chat with you directly.
+                    When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR code, she can immediately open the envelope and experience your love letter directly without any forced login barriers.
                   </p>
                 </div>
               </div>

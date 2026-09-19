@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { Experience, ExperienceStatus } from '@/lib/types';
-import { getAppUrl } from '@/lib/utils';
+import { getAppUrl, getRelationshipShareUrl } from '@/lib/utils';
 
 // ── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_STYLES: Record<ExperienceStatus, string> = {
@@ -68,19 +68,48 @@ function QrShareDialog({
 }) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const appUrl = getAppUrl() || (typeof window !== 'undefined' ? window.location.origin : '');
-  const shareUrl = exp ? `${appUrl}/love/${exp.secure_token}` : '';
+  const shareUrl = exp?.id ? getRelationshipShareUrl(exp.id) : '';
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast({ title: 'Link copied to clipboard! 💌' });
+  const verifyExpExists = async () => {
+    if (!exp?.id) return false;
+    const { data, error } = await supabase
+      .from('experiences')
+      .select('id')
+      .eq('id', exp.id)
+      .maybeSingle();
+    return Boolean(data && !error);
   };
 
-  const downloadQr = () => {
+  const copyLink = async () => {
+    if (!exp?.id) return;
+    const exists = await verifyExpExists();
+    if (!exists) {
+      toast({
+        title: 'Experience not found',
+        description: 'Experience does not exist in the database.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const url = getRelationshipShareUrl(exp.id);
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast({ title: 'Link copied to clipboard! 💌', description: 'Stable relationship link copied.' });
+  };
+
+  const downloadQr = async () => {
     const canvas = document.getElementById(`qr-canvas-${exp.id}`) as HTMLCanvasElement;
-    if (!canvas) return;
+    if (!canvas || !exp?.id) return;
+    const exists = await verifyExpExists();
+    if (!exists) {
+      toast({
+        title: 'Cannot download QR',
+        description: 'Experience not found in database.',
+        variant: 'destructive',
+      });
+      return;
+    }
     const pngUrl = canvas.toDataURL('image/png');
     const downloadLink = document.createElement('a');
     downloadLink.href = pngUrl;
@@ -92,12 +121,23 @@ function QrShareDialog({
   };
 
   const shareNative = async () => {
+    if (!exp?.id) return;
+    const exists = await verifyExpExists();
+    if (!exists) {
+      toast({
+        title: 'Experience not found',
+        description: 'Experience does not exist in the database.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const url = getRelationshipShareUrl(exp.id);
     if (navigator.share) {
       try {
         await navigator.share({
           title: `For ${exp.receiver_name || 'My Pookie'} ❤️`,
           text: `Pookie... I made something special for you. Open it? 💌`,
-          url: shareUrl,
+          url: url,
         });
       } catch {
         // User dismissed share dialog
@@ -183,11 +223,11 @@ function QrShareDialog({
           </button>
         </div>
 
-        {/* Privacy Note */}
+        {/* Access Note */}
         <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-rose-50/70 border border-rose-100 text-left">
-          <Lock className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+          <Heart className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-rose-600/80 leading-relaxed">
-            <strong>Lock Protection Active:</strong> When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR, she will be asked to <strong>sign up or log in first</strong> before reading your love letter.
+            <strong>Instant Romantic Access:</strong> When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR code, she can open the letter immediately without being forced to sign up or log in.
           </p>
         </div>
       </motion.div>
@@ -298,11 +338,24 @@ export default function ExperiencesPage() {
   };
 
   // ── Share link ─────────────────────────────────────────────────────────
-  const copyLink = (token: string) => {
-    const appUrl = getAppUrl() || (typeof window !== 'undefined' ? window.location.origin : '');
-    const url = `${appUrl}/love/${token}`;
+  const copyExperienceLink = async (targetExp: Experience) => {
+    if (!targetExp?.id) return;
+    const { data, error } = await supabase
+      .from('experiences')
+      .select('id')
+      .eq('id', targetExp.id)
+      .maybeSingle();
+    if (error || !data) {
+      toast({
+        title: 'Experience not found',
+        description: 'This experience does not exist in the database.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const url = getRelationshipShareUrl(targetExp.id);
     navigator.clipboard.writeText(url);
-    toast({ title: 'Link copied to clipboard! 💌' });
+    toast({ title: 'Link copied to clipboard! 💌', description: 'Stable relationship link copied.' });
   };
 
   // ── Counts ─────────────────────────────────────────────────────────────
@@ -495,7 +548,7 @@ export default function ExperiencesPage() {
                   </Link>
 
                   <Link
-                    href={`/love/${exp.secure_token}`}
+                    href={`/love/${exp.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-lavender-50 text-lavender-600 text-sm font-medium hover:bg-lavender-100 transition"
@@ -504,7 +557,15 @@ export default function ExperiencesPage() {
                   </Link>
 
                   <button
-                    onClick={() => setQrTarget(exp)}
+                    onClick={async () => {
+                      if (!exp?.id) return;
+                      const { data } = await supabase.from('experiences').select('id').eq('id', exp.id).maybeSingle();
+                      if (!data) {
+                        toast({ title: 'Experience not found', description: 'Experience does not exist in database.', variant: 'destructive' });
+                        return;
+                      }
+                      setQrTarget(exp);
+                    }}
                     title="Generate QR Code & Share"
                     className="p-2 rounded-xl bg-gradient-to-r from-rose-100 to-pink-100 text-rose-600 hover:bg-rose-200 transition"
                   >
@@ -512,7 +573,7 @@ export default function ExperiencesPage() {
                   </button>
 
                   <button
-                    onClick={() => copyLink(exp.secure_token)}
+                    onClick={() => copyExperienceLink(exp)}
                     title="Copy share link"
                     className="p-2 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition"
                   >

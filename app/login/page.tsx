@@ -121,12 +121,13 @@ export default function LoginPage() {
         if (safeTarget.startsWith('/love/') && data.user) {
           const match = safeTarget.match(/\/love\/([^\/\?]+)/);
           if (match && match[1]) {
+            const idOrToken = match[1];
             await supabase
               .from('experiences')
               .update({
                 receiver_id: data.user.id,
               })
-              .eq('secure_token', match[1])
+              .or(`id.eq.${idOrToken},secure_token.eq.${idOrToken}`)
               .is('receiver_id', null);
           }
         }

@@ -132,13 +132,14 @@ function CallbackContent() {
         if (assignedRole === 'receiver' && redirectParam?.startsWith('/love/')) {
           const match = redirectParam.match(/\/love\/([^\/\?]+)/);
           if (match && match[1]) {
+            const idOrToken = match[1];
             await supabase
               .from('experiences')
               .update({
                 receiver_id: user.id,
                 receiver_name: fullName,
               })
-              .eq('secure_token', match[1])
+              .or(`id.eq.${idOrToken},secure_token.eq.${idOrToken}`)
               .is('receiver_id', null);
           }
         }

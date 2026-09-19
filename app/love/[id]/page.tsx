@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Heart, Sparkles, X, Volume2, VolumeX, Play, Pause, Lock, ArrowLeft, ArrowRight, MessageCircle, Star,
-  Eye, EyeOff, Mail, User as UserIcon, CheckCircle2, AlertCircle
+  Heart, Sparkles, X, Volume2, VolumeX, Play, Pause, ArrowLeft, ArrowRight, MessageCircle, Star,
+  Eye, User as UserIcon
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
@@ -16,14 +16,12 @@ import type {
   ResponseStatus, ExperienceTheme
 } from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
-import { GoogleButton } from '@/components/auth/google-button';
 import { Footer } from '@/components/footer';
-import { isVideoUrl } from '@/lib/utils';
+import { isVideoUrl, isValidUUID } from '@/lib/utils';
 import { ParchmentLetter } from '@/components/experience/parchment-letter';
 import { InteractiveEnvelope } from '@/components/experience/interactive-envelope';
 import { FloatingReactions } from '@/components/experience/floating-reactions';
 import { formatCustomDateIdea } from '@/lib/date-ideas';
-import { GlossyHeart } from '@/components/experience/glossy-heart';
 import { FloatingAmbientHearts } from '@/components/experience/floating-ambient-hearts';
 
 // Simplified 6 Core Date Ideas
@@ -37,13 +35,15 @@ const SIMPLE_DATE_IDEAS = [
 ];
 
 export default function LoveExperiencePage() {
-  const { token } = useParams();
+  const params = useParams();
+  const rawParam = (params?.id || params?.token) as string | string[] | undefined;
+  const idOrToken = (Array.isArray(rawParam) ? rawParam[0] : rawParam || '').trim();
+
   const router = useRouter();
   const { toast } = useToast();
   const { user, profile, loading: authLoading } = useAuth();
   const [exp, setExp] = useState<Experience | null>(null);
   const [submittingDate, setSubmittingDate] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [funnyMoments, setFunnyMoments] = useState<FunnyMoment[]>([]);
   const [loveReasons, setLoveReasons] = useState<LoveReason[]>([]);
@@ -62,199 +62,33 @@ export default function LoveExperiencePage() {
   const [heartClicks, setHeartClicks] = useState(0);
   const [easterEgg, setEasterEgg] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    setReduceMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  }, []);
-
-  // Inline Auth State for locked screen
-  const [authTab, setAuthTab] = useState<'login' | 'signup'>('login');
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
-  const [showAuthPassword, setShowAuthPassword] = useState(false);
-  const [authSubmitting, setAuthSubmitting] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authVerificationPending, setAuthVerificationPending] = useState(false);
-  const [authCooldown, setAuthCooldown] = useState(0);
-  const [authResending, setAuthResending] = useState(false);
-
-  useEffect(() => {
-    if (authCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setAuthCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [authCooldown]);
-
-  const handleInlineLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (authSubmitting) return;
-    if (!authEmail.trim() || !authPassword) {
-      setAuthError('Please enter both your email and password.');
-      return;
-    }
-    setAuthSubmitting(true);
-    setAuthError(null);
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: authEmail.trim(),
-        password: authPassword,
-      });
-      if (error) throw error;
-
-      // Connect receiver account to experience if not yet bound
-      if (data.user && exp && !exp.receiver_id && data.user.id !== exp.sender_id) {
-        const loggedUserId = data.user.id;
-        await supabase
-          .from('experiences')
-          .update({
-            receiver_id: loggedUserId,
-            receiver_name: profile?.name || data.user.user_metadata?.name || authName.trim() || exp.receiver_name,
-          })
-          .eq('id', exp.id);
-        setExp((prev) => (prev ? { ...prev, receiver_id: loggedUserId } : null));
-      }
-
-      toast({
-        title: 'Unlocked! ❤️',
-        description: 'Welcome to your love story.',
-      });
-    } catch (err: any) {
-      const errLower = (err?.message || '').toLowerCase();
-      if (errLower.includes('not confirmed') || errLower.includes('email_not_confirmed')) {
-        setAuthVerificationPending(true);
-        setAuthCooldown(60);
-        setAuthError('Please verify your email address to log in. Check your inbox.');
-      } else if (errLower.includes('invalid login') || errLower.includes('invalid_credentials') || errLower.includes('invalid_grant')) {
-        setAuthError('Incorrect email or password. Please try again or create an account.');
-      } else {
-        setAuthError(err?.message || 'Login failed. Please try again.');
-      }
-    } finally {
-      setAuthSubmitting(false);
-    }
-  };
-
-  const handleInlineSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (authSubmitting) return;
-    const finalName = (authName.trim() || exp?.receiver_name || 'My Pookie').trim();
-    if (!authEmail.trim() || !authPassword) {
-      setAuthError('Please enter your email and password.');
-      return;
-    }
-    if (authPassword.length < 6) {
-      setAuthError('Password must be at least 6 characters.');
-      return;
-    }
-
-    setAuthSubmitting(true);
-    setAuthError(null);
-    const tokenStr = Array.isArray(token) ? token[0] : token;
-
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: authEmail.trim(),
-        password: authPassword,
-        options: {
-          data: { name: finalName, role: 'receiver' },
-          emailRedirectTo: typeof window !== 'undefined'
-            ? `${window.location.origin}/auth/callback?redirect=/love/${tokenStr}&role=receiver`
-            : undefined,
-        },
-      });
-      if (error) throw error;
-
-      if (data.user) {
-        const newUserId = data.user.id;
-        await supabase.from('profiles').upsert({
-          id: newUserId,
-          name: finalName,
-          email: authEmail.trim(),
-          role: 'receiver',
-          status: 'active',
-        });
-
-        if (exp && !exp.receiver_id && newUserId !== exp.sender_id) {
-          await supabase
-            .from('experiences')
-            .update({
-              receiver_id: newUserId,
-              receiver_name: finalName,
-            })
-            .eq('id', exp.id);
-          setExp((prev) => (prev ? { ...prev, receiver_id: newUserId, receiver_name: finalName } : null));
-        }
-      }
-
-      if (data.user && !data.session) {
-        setAuthVerificationPending(true);
-        setAuthCooldown(60);
-        toast({
-          title: 'Account created! 🎉',
-          description: 'Please verify your email address to unlock.',
-        });
-        return;
-      }
-
-      toast({
-        title: 'Account created & Unlocked! 💖',
-        description: `Welcome, ${finalName}! Your letter is ready.`,
-      });
-    } catch (err: any) {
-      let msg = err?.message || 'Sign up failed. Please try again.';
-      if (msg.includes('already') || msg.includes('registered')) {
-        msg = 'An account with this email already exists. Switch to Log In tab!';
-        setAuthTab('login');
-      }
-      setAuthError(msg);
-    } finally {
-      setAuthSubmitting(false);
-    }
-  };
-
-  const handleInlineResendVerification = async () => {
-    if (authCooldown > 0 || authResending || !authEmail.trim()) return;
-    setAuthResending(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: authEmail.trim(),
-      });
-      if (error) throw error;
-      toast({
-        title: 'Verification email resent! 💌',
-        description: `Check your inbox at ${authEmail}.`,
-      });
-      setAuthCooldown(60);
-    } catch (err: any) {
-      toast({
-        title: 'Failed to resend email',
-        description: err?.message || 'Please wait a moment and try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setAuthResending(false);
-    }
-  };
 
   useEffect(() => {
     if (authLoading) return;
-    const tokenStr = Array.isArray(token) ? token[0] : token;
-    if (!tokenStr) return;
+    if (!idOrToken) {
+      setLoading(false);
+      setNotFound(true);
+      return;
+    }
 
     let isMounted = true;
     (async () => {
       setLoading(true);
       setNotFound(false);
 
+      // Handle non-UUID slugs (e.g. test-id, invalid text) cleanly without Postgres 22P02 error
+      if (!isValidUUID(idOrToken)) {
+        if (!isMounted) return;
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      // Query by either relationship UUID (id) or secure_token UUID
       const { data: expData, error } = await supabase
         .from('experiences')
         .select('*')
-        .eq('secure_token', tokenStr)
+        .or(`id.eq.${idOrToken},secure_token.eq.${idOrToken}`)
         .maybeSingle();
 
       if (!isMounted) return;
@@ -266,9 +100,6 @@ export default function LoveExperiencePage() {
       }
 
       setExp(expData as Experience);
-      if (expData.receiver_name) {
-        setAuthName(expData.receiver_name);
-      }
 
       // Auto-connect receiver account if current user is logged in
       if (user && expData && user.id !== expData.sender_id && !expData.receiver_id) {
@@ -300,7 +131,7 @@ export default function LoveExperiencePage() {
     return () => {
       isMounted = false;
     };
-  }, [token, user, profile, authLoading]);
+  }, [idOrToken, user, profile, authLoading]);
 
   const handleOpen = async () => {
     setOpened(true);
@@ -321,19 +152,11 @@ export default function LoveExperiencePage() {
           experience_id: exp.id,
         });
       }
-    } else if (exp) {
-      await supabase.from('experiences').update({
-        last_accessed_at: new Date().toISOString(),
-      }).eq('id', exp.id);
     }
 
-    // Play music if available
-    if (exp?.music_url && audioRef.current) {
-      audioRef.current.volume = 0.3;
-      audioRef.current.play().then(() => {
-        setPlaying(true);
-        setMuted(false);
-      }).catch(() => {});
+    // Try auto-playing music
+    if (audioRef.current && exp?.music_url) {
+      audioRef.current.play().then(() => setPlaying(true)).catch(() => {});
     }
   };
 
@@ -347,6 +170,7 @@ export default function LoveExperiencePage() {
       experience_id: exp.id,
       response: resp,
       note: resp === 'maybe' ? dateNote : null,
+      receiver_id: user ? user.id : null,
     });
 
     // Notify sender
@@ -371,6 +195,7 @@ export default function LoveExperiencePage() {
           experience_id: exp.id,
           activity: selectedActivity,
           notes: dateNote,
+          receiver_id: user ? user.id : null,
         });
 
         // Notify sender
@@ -392,16 +217,13 @@ export default function LoveExperiencePage() {
         return;
       }
 
+      setDateConfirmed(true);
       toast({
-        title: skip ? 'Response confirmed! ❤️' : 'Date request sent! ❤️',
-        description: 'Redirecting to your dashboard...',
+        title: 'Response saved! ❤️',
+        description: 'Thank you for your response.',
       });
-      setRedirecting(true);
-      setTimeout(() => {
-        router.push(profile?.role === 'sender' ? '/sender' : '/receiver');
-      }, 1200);
     } catch {
-      router.push(profile?.role === 'sender' ? '/sender' : '/receiver');
+      setDateConfirmed(true);
     } finally {
       setSubmittingDate(false);
     }
@@ -447,294 +269,42 @@ export default function LoveExperiencePage() {
           <div className="space-y-2">
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="text-rose-400 font-handwritten text-xl">Collecting our memories… ❤️</motion.p>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="text-rose-400/60 font-handwritten text-lg">Preparing something for pookie…</motion.p>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.7 }} className="text-rose-400/40 font-handwritten text-lg">Okay… I'm nervous.</motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.7 }} className="text-rose-400/40 font-handwritten text-lg">Okay… I&apos;m nervous.</motion.p>
           </div>
         </div>
       </div>
     );
   }
 
-  if (notFound) {
+  // Friendly Application-Level "Link Not Found or Expired" Page
+  if (notFound || !exp) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#fff1f5] to-[#f8eaff]">
-        <div className="text-center px-6">
-          <Heart className="w-16 h-16 text-rose-300 mx-auto mb-4" />
-          <h1 className="font-display text-2xl text-rose-600 mb-2">This link isn't valid</h1>
-          <p className="text-rose-400/60">The experience may have been removed or the link is incorrect.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is not logged in, require signup or login first
-  if (!user) {
-    const tokenStr = Array.isArray(token) ? token[0] : token;
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] px-4 py-12 relative overflow-hidden">
-        {/* Floating ambient hearts */}
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fff1f5] via-[#fdf2f8] to-[#fffaf5] px-4 py-12 relative overflow-hidden">
         <FloatingAmbientHearts theme="pink-dream" />
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="max-w-md relative z-10 w-full p-6 sm:p-8 rounded-3xl bg-white/90 backdrop-blur-md shadow-2xl border border-rose-100/80"
-        >
-          {/* Glowing locked envelope with 3D heart */}
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            className="relative mx-auto mb-5 w-24 h-16 sm:w-28 sm:h-20"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-200 via-pink-200 to-purple-200 rounded-2xl shadow-xl shadow-rose-200/50" />
-            <div className="absolute top-0 left-0 right-0 h-0 border-l-[48px] sm:border-l-[56px] border-r-[48px] sm:border-r-[56px] border-b-[30px] sm:border-b-[36px] border-l-transparent border-r-transparent border-b-rose-100/90" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white shadow-md flex items-center justify-center">
-                <Lock className="w-5 h-5 text-rose-500" />
-              </div>
-            </div>
-          </motion.div>
-
-          <div className="text-center mb-5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200/70 text-rose-600 text-xs font-semibold mb-2 shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-rose-500" /> Private Love Letter
-            </div>
-
-            <h1 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#3f1d2e] tracking-tight mb-1">
-              For {exp?.receiver_name || 'My Pookie'} ❤️
-            </h1>
-
-            {exp?.receiver_nickname && (
-              <p className="font-handwritten text-xl text-rose-600 mb-1">
-                &ldquo;To my {exp.receiver_nickname}&rdquo;
-              </p>
-            )}
-
-            <p className="text-xs text-[#8f6479] mt-1 leading-relaxed">
-              {exp?.sender_name ? `${exp.sender_name} made a secret love story just for you.` : 'A secret love story was made just for you.'}
-              <br />
-              <span className="font-medium text-rose-700">Please log in or create an account to unlock and open.</span>
-            </p>
+        <div className="relative z-10 max-w-md w-full glass rounded-3xl p-8 text-center shadow-xl border border-rose-100/80">
+          <div className="w-16 h-16 rounded-full bg-rose-100/80 text-rose-500 flex items-center justify-center mx-auto mb-5 shadow-inner">
+            <Heart className="w-8 h-8 text-rose-400 fill-rose-200/50" />
           </div>
-
-          {/* Auth Tab Switcher */}
-          <div className="flex bg-rose-100/60 p-1 rounded-xl mb-4 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => { setAuthTab('login'); setAuthError(null); }}
-              className={`flex-1 py-2 rounded-lg transition text-center ${
-                authTab === 'login'
-                  ? 'bg-white text-rose-600 shadow-sm'
-                  : 'text-rose-900/60 hover:text-rose-900'
-              }`}
-            >
-              ❤️ Log In
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAuthTab('signup'); setAuthError(null); }}
-              className={`flex-1 py-2 rounded-lg transition text-center ${
-                authTab === 'signup'
-                  ? 'bg-white text-rose-600 shadow-sm'
-                  : 'text-rose-900/60 hover:text-rose-900'
-              }`}
-            >
-              💖 Create Account
-            </button>
-          </div>
-
-          {/* Error Message */}
-          {authError && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
-              <div className="flex-1 leading-snug">{authError}</div>
-            </div>
-          )}
-
-          {/* Verification Pending Notice */}
-          {authVerificationPending && (
-            <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-              <p className="font-semibold mb-1">Email verification sent! 💌</p>
-              <p className="text-[11px] opacity-80 mb-2">Check your email ({authEmail}) and click the link to unlock your letter.</p>
-              <button
-                type="button"
-                onClick={handleInlineResendVerification}
-                disabled={authCooldown > 0 || authResending}
-                className="text-xs font-bold text-rose-600 underline hover:text-rose-700 disabled:opacity-50"
-              >
-                {authResending ? 'Resending…' : authCooldown > 0 ? `Resend in ${authCooldown}s` : 'Resend Email'}
-              </button>
-            </div>
-          )}
-
-          {/* Tab 1: Log In Form */}
-          {authTab === 'login' && (
-            <form onSubmit={handleInlineLogin} className="space-y-3">
-              <div>
-                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="email"
-                    required
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Password</label>
-                <div className="relative">
-                  <input
-                    type={showAuthPassword ? 'text' : 'password'}
-                    required
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full px-3 py-2.5 pr-10 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowAuthPassword(!showAuthPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-400 hover:text-rose-600"
-                  >
-                    {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={authSubmitting}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs shadow-md hover:shadow-lg transition transform hover:scale-[1.01] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
-              >
-                {authSubmitting ? (
-                  <span>Unlocking… ❤️</span>
-                ) : (
-                  <>
-                    <Heart className="w-4 h-4 fill-current" />
-                    <span>Unlock Love Letter ❤️</span>
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* Tab 2: Create Account Form */}
-          {authTab === 'signup' && (
-            <form onSubmit={handleInlineSignUp} className="space-y-3">
-              <div>
-                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Your Name</label>
-                <div className="relative">
-                  <UserIcon className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    required
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
-                    placeholder="Your name"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="email"
-                    required
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-rose-900/70 uppercase tracking-wider mb-1">Password</label>
-                <div className="relative">
-                  <input
-                    type={showAuthPassword ? 'text' : 'password'}
-                    required
-                    minLength={6}
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    placeholder="Choose a password (min 6 chars)"
-                    className="w-full px-3 py-2.5 pr-10 rounded-xl border border-rose-200 bg-white/90 text-xs text-rose-950 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowAuthPassword(!showAuthPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-400 hover:text-rose-600"
-                  >
-                    {showAuthPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={authSubmitting}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs shadow-md hover:shadow-lg transition transform hover:scale-[1.01] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
-              >
-                {authSubmitting ? (
-                  <span>Creating Account… 💖</span>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>Create Account & Unlock 💖</span>
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* Social Divider & Google Login */}
-          <div className="mt-4 pt-3 border-t border-rose-100/80">
-            <GoogleButton
-              redirectUrl={`/love/${tokenStr}`}
-              role="receiver"
-              text="Unlock with Google"
-            />
-          </div>
-
-          <p className="text-[#8f6479]/70 text-[11px] text-center mt-3 flex items-center justify-center gap-1">
-            <span>🔒</span>
-            <span>Private & encrypted. Only authorized receiver can view.</span>
+          <h1 className="font-serif-display text-2xl sm:text-3xl font-bold text-rose-800 mb-3">
+            Link Not Found or Expired
+          </h1>
+          <p className="text-sm text-rose-600/70 mb-6 leading-relaxed">
+            This love letter might have been moved, expired, or the link you followed is incorrect. Please check with your partner for the updated link.
           </p>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // If user is logged in with a different account that is not the sender and not the bound receiver
-  if (user && exp?.receiver_id && user.id !== exp.receiver_id && user.id !== exp.sender_id) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] px-4 relative overflow-hidden">
-        <FloatingAmbientHearts theme="pink-dream" />
-        <div className="text-center max-w-md w-full p-8 rounded-3xl bg-white/90 backdrop-blur-md shadow-2xl border border-rose-100 relative z-10">
-          <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mx-auto mb-4 shadow-inner">
-            <Lock className="w-8 h-8" />
+          <div className="space-y-3">
+            <Link
+              href="/"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-400 to-lavender-400 text-white text-sm font-medium hover:shadow-lg transition hover:scale-[1.02]"
+            >
+              Go to Homepage
+            </Link>
+            <Link
+              href="/love/demo"
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/70 hover:bg-white text-rose-600 text-xs font-medium border border-rose-200/60 transition"
+            >
+              See Example Experience
+            </Link>
           </div>
-          <h2 className="font-serif-display text-2xl sm:text-3xl font-bold text-[#3f1d2e] mb-2">Private Love Letter</h2>
-          <p className="text-sm text-[#8f6479] mb-6 leading-relaxed">
-            This love letter was created specifically for <strong>{exp.receiver_name}</strong> and is bound to their account. You are currently signed in as <strong>{profile?.name || user.email}</strong>.
-          </p>
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              window.location.reload();
-            }}
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-xs shadow-lg hover:shadow-xl transition hover:scale-[1.02] cursor-pointer"
-          >
-            Switch Account / Log In with {exp.receiver_name}&apos;s Email
-          </button>
         </div>
       </div>
     );
@@ -743,8 +313,6 @@ export default function LoveExperiencePage() {
   const theme = (exp?.theme as ExperienceTheme) || 'pink-dream';
   const cfg = THEME_CONFIG[theme] || THEME_CONFIG['pink-dream'];
   const isDark = theme === 'lavender-night' || theme === 'starry-romance';
-  const themeConfig = cfg;
-  const subColor = cfg.subColor;
   const isSender = Boolean(user && exp && user.id === exp.sender_id);
 
   if (!opened) {
@@ -756,25 +324,15 @@ export default function LoveExperiencePage() {
             <div className="pointer-events-auto bg-amber-500/95 text-white text-xs font-medium px-4 py-2 rounded-2xl shadow-xl border border-amber-300 flex items-center gap-2 max-w-xl">
               <span className="text-base">👁️</span>
               <span className="flex-1 text-[11px] leading-tight">
-                <strong>Sender Preview Mode:</strong> You are logged in as sender. On your receiver&apos;s device, this letter is locked until she logs in or signs up.
+                <strong>Sender Preview Mode:</strong> You are previewing your created letter. Receivers can open this link directly.
               </span>
-              <button
-                type="button"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  window.location.reload();
-                }}
-                className="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition cursor-pointer"
-              >
-                Test Logged Out
-              </button>
             </div>
           </div>
         )}
 
-        {/* Floating top navigation if logged in */}
-        {user && !isSender && (
-          <div className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none">
+        {/* Top Navigation */}
+        <div className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none">
+          {user && !isSender ? (
             <Link
               href={profile?.role === 'sender' ? '/sender' : '/receiver'}
               className="pointer-events-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-rose-700 text-xs font-medium shadow-md backdrop-blur-md border border-rose-200/60 transition hover:scale-105"
@@ -782,8 +340,18 @@ export default function LoveExperiencePage() {
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{profile?.role === 'sender' ? 'Sender Dashboard' : 'Receiver Dashboard'}</span>
             </Link>
-          </div>
-        )}
+          ) : !user ? (
+            <div className="ml-auto">
+              <Link
+                href={`/login?redirect=/love/${idOrToken}&role=receiver`}
+                className="pointer-events-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-rose-700 text-xs font-medium shadow-md backdrop-blur-md border border-rose-200/60 transition hover:scale-105"
+              >
+                <UserIcon className="w-3.5 h-3.5" />
+                <span>Log In</span>
+              </Link>
+            </div>
+          ) : null}
+        </div>
 
         {/* Dreamy floating 3D hearts & romantic background elements */}
         <FloatingAmbientHearts theme={theme} />
@@ -811,43 +379,45 @@ export default function LoveExperiencePage() {
           <div className="pointer-events-auto bg-amber-500/95 text-white text-xs font-medium px-4 py-2 rounded-2xl shadow-xl border border-amber-300 flex items-center gap-2 max-w-xl">
             <span className="text-base">👁️</span>
             <span className="flex-1 text-[11px] leading-tight">
-              <strong>Sender Preview Mode:</strong> You are logged in as sender. On your receiver&apos;s device, this letter is locked until she logs in or signs up.
+              <strong>Sender Preview Mode:</strong> You are previewing this letter. Receivers can open and view it directly.
             </span>
-            <button
-              type="button"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                window.location.reload();
-              }}
-              className="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition cursor-pointer"
-            >
-              Test Logged Out
-            </button>
           </div>
         </div>
       )}
 
-      {/* Floating navigation to dashboard & chat */}
-      {user && !isSender && (
-        <div className="fixed top-4 left-4 right-4 z-40 flex items-center justify-between pointer-events-none">
-          <Link
-            href={profile?.role === 'sender' ? '/sender' : '/receiver'}
-            className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-rose-600 text-xs font-semibold shadow-md backdrop-blur-md border border-rose-100 transition hover:scale-105"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{profile?.role === 'sender' ? 'Sender Dashboard' : 'Receiver Dashboard'}</span>
-          </Link>
-          {profile?.role === 'receiver' && (
+      {/* Floating navigation bar */}
+      <div className="fixed top-4 left-4 right-4 z-40 flex items-center justify-between pointer-events-none">
+        {user && !isSender ? (
+          <>
             <Link
-              href="/receiver/messages"
-              className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-semibold shadow-md backdrop-blur-md transition hover:scale-105"
+              href={profile?.role === 'sender' ? '/sender' : '/receiver'}
+              className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-rose-600 text-xs font-semibold shadow-md backdrop-blur-md border border-rose-100 transition hover:scale-105"
             >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span>Chat</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{profile?.role === 'sender' ? 'Sender Dashboard' : 'Receiver Dashboard'}</span>
             </Link>
-          )}
-        </div>
-      )}
+            {profile?.role === 'receiver' && (
+              <Link
+                href="/receiver/messages"
+                className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-semibold shadow-md backdrop-blur-md transition hover:scale-105"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Chat</span>
+              </Link>
+            )}
+          </>
+        ) : !user ? (
+          <div className="ml-auto">
+            <Link
+              href={`/login?redirect=/love/${idOrToken}&role=receiver`}
+              className="pointer-events-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-rose-600 text-xs font-semibold shadow-md backdrop-blur-md border border-rose-100 transition hover:scale-105"
+            >
+              <UserIcon className="w-3.5 h-3.5" />
+              <span>Log In</span>
+            </Link>
+          </div>
+        ) : null}
+      </div>
 
       {/* Music controls */}
       {exp?.music_url && (
@@ -881,7 +451,7 @@ export default function LoveExperiencePage() {
       {/* Floating Reaction Dock */}
       <FloatingReactions isDark={isDark} />
 
-      {/* Content sections: Single Cohesive Flow matching preview.html */}
+      {/* Content sections: Single Cohesive Flow */}
       <div className="relative z-10 pt-20 pb-16 px-4 sm:px-8 w-full max-w-3xl mx-auto space-y-12">
         
         {/* 1. THE APOLOGY MESSAGE (If provided by sender) */}
@@ -974,7 +544,7 @@ export default function LoveExperiencePage() {
                 })}
               </div>
             ) : (
-              /* Fallback default memories matching preview.html */
+              /* Fallback default memories matching preview */
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <motion.div
                   whileHover={{ scale: 1.04, rotate: 0 }}
@@ -1165,7 +735,7 @@ export default function LoveExperiencePage() {
               <button
                 type="button"
                 onClick={() => handleResponse('yes')}
-                className={`flex-1 py-3 px-4 rounded-xl font-bold text-base shadow-lg transition-all transform hover:scale-[1.02] ${
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-base shadow-lg transition-all transform hover:scale-[1.02] cursor-pointer ${
                   response === 'yes'
                     ? `${cfg.buttonPrimary} ring-2 ring-offset-2`
                     : cfg.buttonPrimary
@@ -1176,7 +746,7 @@ export default function LoveExperiencePage() {
               <button
                 type="button"
                 onClick={() => handleResponse('maybe')}
-                className={`flex-1 py-3 px-4 rounded-xl font-bold text-base shadow-lg transition-all transform hover:scale-[1.02] ${
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-base shadow-lg transition-all transform hover:scale-[1.02] cursor-pointer ${
                   response === 'maybe'
                     ? 'bg-amber-500 text-white ring-2 ring-amber-400 ring-offset-2'
                     : 'bg-amber-500/90 hover:bg-amber-500 text-white'
@@ -1187,7 +757,7 @@ export default function LoveExperiencePage() {
               <button
                 type="button"
                 onClick={() => handleResponse('no')}
-                className={`flex-1 py-3 px-4 rounded-xl font-bold text-base border shadow-sm transition-all transform hover:scale-[1.02] ${
+                className={`flex-1 py-3 px-4 rounded-xl font-bold text-base border shadow-sm transition-all transform hover:scale-[1.02] cursor-pointer ${
                   response === 'no'
                     ? 'bg-slate-700 text-white ring-2 ring-slate-400 ring-offset-2'
                     : isDark
@@ -1199,7 +769,7 @@ export default function LoveExperiencePage() {
               </button>
             </div>
 
-            {/* INLINE EXPANSION: On YES (Clean 4-6 ideas + manual enter) */}
+            {/* INLINE EXPANSION: On YES */}
             <AnimatePresence>
               {response === 'yes' && (
                 <motion.div
@@ -1225,26 +795,38 @@ export default function LoveExperiencePage() {
                           )}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                          <Link
-                            href={profile?.role === 'sender' ? '/sender' : '/receiver'}
-                            className={`px-5 py-2.5 rounded-xl ${cfg.buttonPrimary} text-xs font-semibold shadow transition inline-flex items-center justify-center gap-1.5`}
-                          >
-                            <span>Go to Dashboard</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Link>
-                          {profile?.role === 'receiver' && (
+                          {user ? (
+                            <>
+                              <Link
+                                href={profile?.role === 'sender' ? '/sender' : '/receiver'}
+                                className={`px-5 py-2.5 rounded-xl ${cfg.buttonPrimary} text-xs font-semibold shadow transition inline-flex items-center justify-center gap-1.5`}
+                              >
+                                <span>Go to Dashboard</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Link>
+                              {profile?.role === 'receiver' && (
+                                <Link
+                                  href="/receiver/messages"
+                                  className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-semibold shadow-md backdrop-blur-md transition hover:scale-105"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                  <span>Chat</span>
+                                </Link>
+                              )}
+                            </>
+                          ) : (
                             <Link
-                              href="/receiver/messages"
-                              className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-semibold shadow-md backdrop-blur-md transition hover:scale-105"
+                              href={`/signup?redirect=/love/${idOrToken}&role=receiver`}
+                              className={`px-5 py-2.5 rounded-xl ${cfg.buttonPrimary} text-xs font-semibold shadow transition inline-flex items-center justify-center gap-1.5`}
                             >
-                              <MessageCircle className="w-3.5 h-3.5" />
-                              <span>Chat</span>
+                              <span>Create Account & Chat</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
                             </Link>
                           )}
                           <button
                             type="button"
                             onClick={() => setDateConfirmed(false)}
-                            className={`px-4 py-2 rounded-xl text-xs hover:underline ${cfg.subColor}`}
+                            className={`px-4 py-2 rounded-xl text-xs hover:underline cursor-pointer ${cfg.subColor}`}
                           >
                             Change Date
                           </button>
@@ -1280,7 +862,7 @@ export default function LoveExperiencePage() {
                                   key={item.key}
                                   type="button"
                                   onClick={() => setSelectedActivity(item.key)}
-                                  className={`p-3 rounded-2xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1.5 border relative ${
+                                  className={`p-3 rounded-2xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1.5 border relative cursor-pointer ${
                                     isSelected ? cfg.dateCardActive : cfg.dateCardBg
                                   }`}
                                 >
@@ -1322,7 +904,7 @@ export default function LoveExperiencePage() {
                                 }
                               }}
                               disabled={!customDateInput.trim()}
-                              className={`px-4 py-2.5 rounded-xl ${cfg.buttonPrimary} text-xs font-semibold disabled:opacity-40 transition shadow-xs`}
+                              className={`px-4 py-2.5 rounded-xl ${cfg.buttonPrimary} text-xs font-semibold disabled:opacity-40 transition shadow-xs cursor-pointer`}
                             >
                               Pick
                             </button>
@@ -1341,7 +923,7 @@ export default function LoveExperiencePage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedActivity(null)}
-                                className={`text-[11px] hover:underline ${cfg.subColor}`}
+                                className={`text-[11px] hover:underline cursor-pointer ${cfg.subColor}`}
                               >
                                 Clear
                               </button>
@@ -1361,7 +943,7 @@ export default function LoveExperiencePage() {
                             type="button"
                             onClick={() => handleDateSubmit(false)}
                             disabled={submittingDate || !selectedActivity}
-                            className={`flex-1 py-2.5 px-4 rounded-xl ${cfg.buttonPrimary} font-bold text-xs shadow transition disabled:opacity-40 flex items-center justify-center gap-1.5`}
+                            className={`flex-1 py-2.5 px-4 rounded-xl ${cfg.buttonPrimary} font-bold text-xs shadow transition disabled:opacity-40 flex items-center justify-center gap-1.5 cursor-pointer`}
                           >
                             {submittingDate ? (
                               <span>Saving Date Request...</span>
@@ -1372,7 +954,7 @@ export default function LoveExperiencePage() {
                           <button
                             type="button"
                             onClick={() => setResponse(null)}
-                            className={`py-2.5 px-3.5 rounded-xl text-xs font-semibold border transition ${
+                            className={`py-2.5 px-3.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
                               isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-600 hover:bg-slate-100'
                             }`}
                           >
@@ -1426,18 +1008,19 @@ export default function LoveExperiencePage() {
                               experience_id: exp.id,
                               response: 'maybe',
                               note: dateNote,
+                              receiver_id: user ? user.id : null,
                             });
                           }
                           toast({ title: 'Note saved ❤️', description: 'Thank you for your honesty.' });
                         }}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow transition"
+                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white shadow transition cursor-pointer"
                       >
                         Save Note
                       </button>
                       <button
                         type="button"
                         onClick={() => setResponse(null)}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold border border-amber-300 text-amber-600 hover:bg-amber-100 transition"
+                        className="px-4 py-2 rounded-xl text-xs font-semibold border border-amber-300 text-amber-600 hover:bg-amber-100 transition cursor-pointer"
                       >
                         Change Response
                       </button>
@@ -1473,7 +1056,7 @@ export default function LoveExperiencePage() {
                       <button
                         type="button"
                         onClick={() => setResponse(null)}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-700 hover:bg-slate-800 text-white shadow transition"
+                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-700 hover:bg-slate-800 text-white shadow transition cursor-pointer"
                       >
                         Change Response
                       </button>
@@ -1485,7 +1068,35 @@ export default function LoveExperiencePage() {
           </motion.div>
         </section>
 
-        {/* Lightbox Viewer (when clicked on any memory or gallery item) */}
+        {/* Optional prompt to save to account if viewing as guest */}
+        {!user && (
+          <div className="glass rounded-2xl p-5 text-center border border-rose-100/80 shadow-md">
+            <Heart className="w-6 h-6 text-rose-400 mx-auto mb-2" />
+            <h4 className="font-serif-display text-base font-bold text-rose-700 mb-1">
+              Want to save this letter forever?
+            </h4>
+            <p className="text-xs text-rose-600/70 mb-3 max-w-sm mx-auto">
+              Create a free account or log in to save this letter to your personal dashboard and chat with your partner.
+            </p>
+            <div className="flex justify-center gap-2">
+              <Link
+                href={`/signup?redirect=/love/${idOrToken}&role=receiver`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-400 to-pink-500 text-white text-xs font-semibold shadow-sm hover:shadow transition"
+              >
+                <span>Create Free Account</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                href={`/login?redirect=/love/${idOrToken}&role=receiver`}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/80 hover:bg-white text-rose-600 text-xs font-semibold border border-rose-200/60 shadow-xs transition"
+              >
+                <span>Log In</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Lightbox Viewer */}
         <AnimatePresence>
           {lightboxItem && (
             <motion.div
@@ -1496,7 +1107,7 @@ export default function LoveExperiencePage() {
               className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm"
             >
               <button
-                className="absolute top-4 right-4 text-white hover:text-rose-300 transition p-2 rounded-full bg-white/10"
+                className="absolute top-4 right-4 text-white hover:text-rose-300 transition p-2 rounded-full bg-white/10 cursor-pointer"
                 onClick={() => setLightboxItem(null)}
                 aria-label="Close"
               >

@@ -84,7 +84,7 @@ export default function AdminRelationshipsPage() {
                 </div>
               </div>
               <Link
-                href={`/love/${exp.secure_token}`}
+                href={`/love/${exp.id}`}
                 target="_blank"
                 className="p-2 rounded-lg text-rose-400 hover:bg-rose-50 transition"
               >

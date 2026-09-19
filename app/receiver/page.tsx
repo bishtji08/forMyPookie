@@ -198,7 +198,7 @@ export default function ReceiverOverview() {
               transition={{ delay: i * 0.1 }}
             >
               <Link
-                href={`/love/${exp.secure_token}`}
+                href={`/love/${exp.id}`}
                 className="block glass rounded-2xl p-6 hover:shadow-lg hover:shadow-rose-200/30 transition-all group"
               >
                 <div className="flex items-center justify-between">
