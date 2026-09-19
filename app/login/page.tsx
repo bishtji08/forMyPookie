@@ -179,8 +179,21 @@ export default function LoginPage() {
         </Link>
 
         <div className="glass rounded-3xl p-6 sm:p-8 shadow-xl shadow-rose-200/30">
-          <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Welcome back</h1>
-          <p className="text-sm text-rose-400/70 mb-6">Log in to continue your story.</p>
+          {redirectUrl?.startsWith('/love/') ? (
+            <div className="mb-6 text-left">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100/90 border border-rose-200/70 text-rose-600 text-xs font-semibold mb-2">
+                <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-300" />
+                Unlocking Private Love Letter 💌
+              </div>
+              <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Welcome back</h1>
+              <p className="text-sm text-rose-400/80">Log in to unlock and read your private love letter.</p>
+            </div>
+          ) : (
+            <div className="mb-6 text-left">
+              <h1 className="font-display text-2xl font-bold text-rose-700 mb-1">Welcome back</h1>
+              <p className="text-sm text-rose-400/70">Log in to continue your story.</p>
+            </div>
+          )}
 
           {unconfirmedEmail && (
             <div className="mb-6 p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs sm:text-sm">

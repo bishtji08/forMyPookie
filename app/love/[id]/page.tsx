@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, Sparkles, X, Volume2, VolumeX, Play, Pause, ArrowLeft, ArrowRight, MessageCircle, Star,
-  Eye, User as UserIcon
+  Eye, User as UserIcon, Lock
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
@@ -62,6 +62,14 @@ export default function LoveExperiencePage() {
   const [heartClicks, setHeartClicks] = useState(0);
   const [easterEgg, setEasterEgg] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // If not logged in, redirect to signup or login
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user && idOrToken) {
+      router.replace(`/signup?redirect=/love/${encodeURIComponent(idOrToken)}&role=receiver`);
+    }
+  }, [authLoading, user, idOrToken, router]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -310,6 +318,66 @@ export default function LoveExperiencePage() {
     );
   }
 
+  // Not logged in: Cannot view the letter. Render locked screen while redirecting to signup/login.
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fff1f5] via-[#fdf2f8] to-[#fffaf5] px-4 py-12 relative overflow-hidden">
+        <FloatingAmbientHearts theme="pink-dream" />
+        <div className="relative z-10 max-w-md w-full glass rounded-3xl p-8 text-center shadow-2xl border border-rose-100">
+          <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mx-auto mb-4 shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="font-serif-display text-2xl font-bold text-rose-800 mb-2">Private Love Letter Locked 💌</h2>
+          <p className="text-sm text-rose-600/80 mb-6 leading-relaxed">
+            This love letter is private. Please sign up or log in to unlock and read your letter. Redirecting you...
+          </p>
+          <div className="space-y-3">
+            <Link
+              href={`/signup?redirect=/love/${encodeURIComponent(idOrToken)}&role=receiver`}
+              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-400 to-lavender-400 text-white font-semibold text-sm shadow-md hover:shadow-lg transition hover:scale-[1.02]"
+            >
+              <span>Sign Up to Unlock</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href={`/login?redirect=/love/${encodeURIComponent(idOrToken)}&role=receiver`}
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/80 hover:bg-white text-rose-600 font-semibold text-xs border border-rose-200/60 shadow-xs transition"
+            >
+              <span>Already have an account? Log In</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is logged in with a different account that is not the sender and not the bound receiver
+  if (user && exp?.receiver_id && user.id !== exp.receiver_id && user.id !== exp.sender_id) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fff1f5] via-[#fdf2f8] to-[#fffaf5] px-4 relative overflow-hidden">
+        <FloatingAmbientHearts theme="pink-dream" />
+        <div className="text-center max-w-md w-full p-8 rounded-3xl bg-white/90 backdrop-blur-md shadow-2xl border border-rose-100 relative z-10">
+          <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mx-auto mb-4 shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="font-serif-display text-2xl font-bold text-rose-800 mb-2">Private Love Letter</h2>
+          <p className="text-sm text-rose-600/80 mb-6 leading-relaxed">
+            This love letter was created specifically for <strong>{exp.receiver_name || 'someone else'}</strong> and is bound to their account. You are currently signed in as <strong>{profile?.name || user.email}</strong>.
+          </p>
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.reload();
+            }}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold text-xs shadow-lg hover:shadow-xl transition hover:scale-[1.02] cursor-pointer"
+          >
+            Switch Account / Log In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const theme = (exp?.theme as ExperienceTheme) || 'pink-dream';
   const cfg = THEME_CONFIG[theme] || THEME_CONFIG['pink-dream'];
   const isDark = theme === 'lavender-night' || theme === 'starry-romance';
@@ -331,8 +399,8 @@ export default function LoveExperiencePage() {
         )}
 
         {/* Top Navigation */}
-        <div className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none">
-          {user && !isSender ? (
+        {user && !isSender && (
+          <div className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none">
             <Link
               href={profile?.role === 'sender' ? '/sender' : '/receiver'}
               className="pointer-events-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-rose-700 text-xs font-medium shadow-md backdrop-blur-md border border-rose-200/60 transition hover:scale-105"
@@ -340,18 +408,8 @@ export default function LoveExperiencePage() {
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{profile?.role === 'sender' ? 'Sender Dashboard' : 'Receiver Dashboard'}</span>
             </Link>
-          ) : !user ? (
-            <div className="ml-auto">
-              <Link
-                href={`/login?redirect=/love/${idOrToken}&role=receiver`}
-                className="pointer-events-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-rose-700 text-xs font-medium shadow-md backdrop-blur-md border border-rose-200/60 transition hover:scale-105"
-              >
-                <UserIcon className="w-3.5 h-3.5" />
-                <span>Log In</span>
-              </Link>
-            </div>
-          ) : null}
-        </div>
+          </div>
+        )}
 
         {/* Dreamy floating 3D hearts & romantic background elements */}
         <FloatingAmbientHearts theme={theme} />
@@ -386,38 +444,26 @@ export default function LoveExperiencePage() {
       )}
 
       {/* Floating navigation bar */}
-      <div className="fixed top-4 left-4 right-4 z-40 flex items-center justify-between pointer-events-none">
-        {user && !isSender ? (
-          <>
+      {user && !isSender && (
+        <div className="fixed top-4 left-4 right-4 z-40 flex items-center justify-between pointer-events-none">
+          <Link
+            href={profile?.role === 'sender' ? '/sender' : '/receiver'}
+            className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-rose-600 text-xs font-semibold shadow-md backdrop-blur-md border border-rose-100 transition hover:scale-105"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>{profile?.role === 'sender' ? 'Sender Dashboard' : 'Receiver Dashboard'}</span>
+          </Link>
+          {profile?.role === 'receiver' && (
             <Link
-              href={profile?.role === 'sender' ? '/sender' : '/receiver'}
-              className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-rose-600 text-xs font-semibold shadow-md backdrop-blur-md border border-rose-100 transition hover:scale-105"
+              href="/receiver/messages"
+              className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-semibold shadow-md backdrop-blur-md transition hover:scale-105"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{profile?.role === 'sender' ? 'Sender Dashboard' : 'Receiver Dashboard'}</span>
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>Chat</span>
             </Link>
-            {profile?.role === 'receiver' && (
-              <Link
-                href="/receiver/messages"
-                className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-semibold shadow-md backdrop-blur-md transition hover:scale-105"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>Chat</span>
-              </Link>
-            )}
-          </>
-        ) : !user ? (
-          <div className="ml-auto">
-            <Link
-              href={`/login?redirect=/love/${idOrToken}&role=receiver`}
-              className="pointer-events-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-rose-600 text-xs font-semibold shadow-md backdrop-blur-md border border-rose-100 transition hover:scale-105"
-            >
-              <UserIcon className="w-3.5 h-3.5" />
-              <span>Log In</span>
-            </Link>
-          </div>
-        ) : null}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Music controls */}
       {exp?.music_url && (
@@ -1067,34 +1113,6 @@ export default function LoveExperiencePage() {
             </AnimatePresence>
           </motion.div>
         </section>
-
-        {/* Optional prompt to save to account if viewing as guest */}
-        {!user && (
-          <div className="glass rounded-2xl p-5 text-center border border-rose-100/80 shadow-md">
-            <Heart className="w-6 h-6 text-rose-400 mx-auto mb-2" />
-            <h4 className="font-serif-display text-base font-bold text-rose-700 mb-1">
-              Want to save this letter forever?
-            </h4>
-            <p className="text-xs text-rose-600/70 mb-3 max-w-sm mx-auto">
-              Create a free account or log in to save this letter to your personal dashboard and chat with your partner.
-            </p>
-            <div className="flex justify-center gap-2">
-              <Link
-                href={`/signup?redirect=/love/${idOrToken}&role=receiver`}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-400 to-pink-500 text-white text-xs font-semibold shadow-sm hover:shadow transition"
-              >
-                <span>Create Free Account</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-              <Link
-                href={`/login?redirect=/love/${idOrToken}&role=receiver`}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/80 hover:bg-white text-rose-600 text-xs font-semibold border border-rose-200/60 shadow-xs transition"
-              >
-                <span>Log In</span>
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* Lightbox Viewer */}
         <AnimatePresence>

@@ -960,13 +960,13 @@ export default function ExperienceDetailPage() {
                 </div>
               </div>
 
-              {/* Direct Access Explanation */}
+              {/* Lock Protection Explanation */}
               <div className="flex items-start gap-3 p-4 rounded-xl bg-rose-50/70 border border-rose-200/60">
-                <Heart className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                <Lock className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-rose-700">Instant Romantic Access</p>
+                  <p className="text-sm font-semibold text-rose-700">Lock Protection Active</p>
                   <p className="text-xs text-rose-600/80 mt-0.5 leading-relaxed">
-                    When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR code, she can immediately open the envelope and experience your love letter directly without any forced login barriers.
+                    When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR code, she will be redirected to <strong>sign up or log in first</strong> before unlocking the letter. Once logged in, she can read everything and chat with you directly.
                   </p>
                 </div>
               </div>

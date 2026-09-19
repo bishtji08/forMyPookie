@@ -223,11 +223,11 @@ function QrShareDialog({
           </button>
         </div>
 
-        {/* Access Note */}
+        {/* Privacy Note */}
         <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-rose-50/70 border border-rose-100 text-left">
-          <Heart className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+          <Lock className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-rose-600/80 leading-relaxed">
-            <strong>Instant Romantic Access:</strong> When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR code, she can open the letter immediately without being forced to sign up or log in.
+            <strong>Lock Protection Active:</strong> When {exp.receiver_name && exp.receiver_name.toLowerCase() !== 'admin' ? exp.receiver_name : 'your pookie'} opens this link or scans the QR, she will be redirected to <strong>sign up or log in first</strong> before reading your love letter.
           </p>
         </div>
       </motion.div>
