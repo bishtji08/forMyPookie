@@ -17,6 +17,7 @@ import { FileUpload } from '@/components/upload/file-upload';
 import type { Experience, Memory, FunnyMoment, LoveReason, GalleryItem, ExperienceTheme } from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
 import { getAppUrl, isVideoUrl } from '@/lib/utils';
+import { PRESET_DATE_IDEAS, DATE_CATEGORIES, formatCustomDateIdea } from '@/lib/date-ideas';
 
 type Tab = 'details' | 'receiver' | 'memories' | 'funny' | 'reasons' | 'gallery' | 'share';
 
@@ -43,6 +44,35 @@ export default function ExperienceDetailPage() {
   // Receiver assignment
   const [receiverEmail, setReceiverEmail] = useState('');
   const [assigning, setAssigning] = useState(false);
+
+  // Date options management
+  const [customDateInput, setCustomDateInput] = useState('');
+  const [dateCategory, setDateCategory] = useState<'all' | 'romantic' | 'food' | 'cozy' | 'outdoor' | 'fun'>('all');
+
+  const toggleDateOption = (opt: string) => {
+    const current = editForm.date_options || [];
+    const updated = current.includes(opt)
+      ? current.filter((o) => o !== opt)
+      : [...current, opt];
+    setEditForm({ ...editForm, date_options: updated });
+  };
+
+  const handleAddCustomDate = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = customDateInput.trim();
+    if (!trimmed) return;
+    const current = editForm.date_options || [];
+    if (!current.includes(trimmed)) {
+      setEditForm({ ...editForm, date_options: [...current, trimmed] });
+      toast({ title: 'Date idea added! ✨', description: `"${trimmed}" is now an option.` });
+    }
+    setCustomDateInput('');
+  };
+
+  const removeCustomDate = (opt: string) => {
+    const current = editForm.date_options || [];
+    setEditForm({ ...editForm, date_options: current.filter((o) => o !== opt) });
+  };
 
   useEffect(() => {
     (async () => {
@@ -427,6 +457,133 @@ export default function ExperienceDetailPage() {
                   />
                 </div>
               </div>
+
+              {/* Date Options Manager */}
+              <div className="pt-4 border-t border-rose-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-rose-700">Date Options Offered</h3>
+                    <p className="text-xs text-rose-400/70">Choose what dates to offer her, or add special ideas just for you two.</p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-600">
+                    {(editForm.date_options || []).length} active
+                  </span>
+                </div>
+
+                {/* Category Pills */}
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                  <button
+                    type="button"
+                    onClick={() => setDateCategory('all')}
+                    className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
+                      dateCategory === 'all'
+                        ? 'bg-rose-500 text-white shadow-xs'
+                        : 'bg-white/80 text-rose-600 hover:bg-white border border-rose-100'
+                    }`}
+                  >
+                    🌟 All
+                  </button>
+                  {Object.entries(DATE_CATEGORIES).map(([catKey, cat]) => (
+                    <button
+                      type="button"
+                      key={catKey}
+                      onClick={() => setDateCategory(catKey as any)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
+                        dateCategory === catKey
+                          ? 'bg-rose-500 text-white shadow-xs'
+                          : 'bg-white/80 text-rose-600 hover:bg-white border border-rose-100'
+                      }`}
+                    >
+                      {cat.emoji} {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Preset Options Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {PRESET_DATE_IDEAS.filter((p) => dateCategory === 'all' || p.category === dateCategory).map((opt) => {
+                    const isSelected = (editForm.date_options || []).includes(opt.key);
+                    return (
+                      <button
+                        type="button"
+                        key={opt.key}
+                        onClick={() => toggleDateOption(opt.key)}
+                        className={`p-2.5 rounded-xl text-left border transition-all text-xs flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white border-transparent shadow-xs'
+                            : 'bg-white/60 text-rose-700 hover:bg-white border-rose-200/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-base">{opt.emoji}</span>
+                          {isSelected && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                        </div>
+                        <span className="font-medium truncate">{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Add Custom Date Input */}
+                <div className="pt-2">
+                  <div className="flex gap-2">
+                    <input
+                      value={customDateInput}
+                      onChange={(e) => setCustomDateInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomDate();
+                        }
+                      }}
+                      placeholder="Add custom date (e.g. Rainy walk 🌧️, Rooftop stargazing 🔭)"
+                      className="flex-1 px-3.5 py-2 rounded-xl bg-white/80 border border-rose-200/60 focus:border-rose-400 outline-none text-rose-700 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddCustomDate()}
+                      disabled={!customDateInput.trim()}
+                      className="px-3.5 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-medium transition disabled:opacity-40 flex items-center gap-1 shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+
+                  {/* Display Any Custom Dates Added */}
+                  {(() => {
+                    const customAdded = (editForm.date_options || []).filter(
+                      (opt) => !PRESET_DATE_IDEAS.some((p) => p.key === opt)
+                    );
+                    if (customAdded.length === 0) return null;
+                    return (
+                      <div className="mt-2.5 flex flex-wrap gap-1.5">
+                        {customAdded.map((cOpt) => {
+                          const info = formatCustomDateIdea(cOpt);
+                          return (
+                            <span
+                              key={cOpt}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-medium border border-rose-200"
+                            >
+                              <span>{info.emoji}</span>
+                              <span>{info.label}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeCustomDate(cOpt)}
+                                className="p-0.5 hover:bg-rose-200 rounded-full text-rose-500 transition"
+                                aria-label={`Remove ${info.label}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
               <button
                 onClick={saveDetails}
                 disabled={saving}

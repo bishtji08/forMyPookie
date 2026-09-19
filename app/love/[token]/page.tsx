@@ -16,6 +16,11 @@ import { THEME_CONFIG } from '@/lib/types';
 import { GoogleButton } from '@/components/auth/google-button';
 import { Footer } from '@/components/footer';
 import { isVideoUrl } from '@/lib/utils';
+import { ParchmentLetter } from '@/components/experience/parchment-letter';
+import { InteractiveEnvelope } from '@/components/experience/interactive-envelope';
+import { FloatingReactions } from '@/components/experience/floating-reactions';
+import { PRESET_DATE_IDEAS, DATE_CATEGORIES, formatCustomDateIdea } from '@/lib/date-ideas';
+import { GlossyHeart } from '@/components/experience/glossy-heart';
 
 export default function LoveExperiencePage() {
   const { token } = useParams();
@@ -35,6 +40,8 @@ export default function LoveExperiencePage() {
   const [response, setResponse] = useState<ResponseStatus | null>(null);
   const [showDateSelection, setShowDateSelection] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+  const [customDateInput, setCustomDateInput] = useState('');
+  const [dateCategory, setDateCategory] = useState<string>('all');
   const [dateNote, setDateNote] = useState('');
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(false);
@@ -292,83 +299,82 @@ export default function LoveExperiencePage() {
   if (!user) {
     const tokenStr = Array.isArray(token) ? token[0] : token;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1a1a2e] via-[#2d1b4e] to-[#1a1a2e] px-4 relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] px-4 relative overflow-hidden">
         {/* Floating hearts */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           {[...Array(10)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute text-rose-300/20"
-              initial={{ y: '100vh', x: `${10 + i * 9}%`, opacity: 0 }}
-              animate={{ y: '-10vh', opacity: [0, 0.4, 0] }}
+              className="absolute"
+              initial={{ y: '105vh', x: `${8 + i * 9}%`, opacity: 0 }}
+              animate={{ y: '-10vh', opacity: [0, 0.35, 0] }}
               transition={{ duration: 7 + i, repeat: Infinity, delay: i * 0.4 }}
             >
-              <Heart className="w-5 h-5 fill-current" />
+              <GlossyHeart size={18 + (i % 3) * 6} glow={false} className="opacity-30" />
             </motion.div>
           ))}
         </div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="text-center max-w-lg relative z-10 w-full"
+          className="text-center max-w-md relative z-10 w-full p-8 rounded-3xl bg-white/85 backdrop-blur-md shadow-2xl border border-white/90"
         >
-          {/* Glowing locked envelope */}
+          {/* Glowing locked envelope with 3D heart */}
           <motion.div
-            animate={{ y: [0, -8, 0] }}
+            animate={{ y: [0, -6, 0] }}
             transition={{ duration: 3, repeat: Infinity }}
-            className="relative mx-auto mb-8 w-32 h-24"
+            className="relative mx-auto mb-6 w-28 h-20"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-400 to-lavender-400 rounded-2xl shadow-2xl shadow-rose-500/40" />
-            <div className="absolute top-0 left-0 right-0 h-0 border-l-[64px] border-r-[64px] border-b-[40px] border-l-transparent border-r-transparent border-b-rose-300/80" />
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-200 via-pink-200 to-purple-200 rounded-2xl shadow-xl shadow-rose-200/50" />
+            <div className="absolute top-0 left-0 right-0 h-0 border-l-[56px] border-r-[56px] border-b-[36px] border-l-transparent border-r-transparent border-b-rose-100/90" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-white/95 shadow-lg flex items-center justify-center">
-                <Lock className="w-6 h-6 text-rose-500" />
+              <div className="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center">
+                <Lock className="w-5 h-5 text-rose-500" />
               </div>
             </div>
           </motion.div>
 
-          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-rose-300 text-xs font-medium mb-4">
-            <Sparkles className="w-3.5 h-3.5 text-rose-400" /> Private Love Letter
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium mb-3">
+            <Sparkles className="w-3.5 h-3.5 text-rose-500" /> Private Love Letter
           </div>
 
-          <h1 className="font-display text-3xl md:text-5xl font-bold text-white mb-3">
+          <h1 className="font-serif-display text-3xl sm:text-4xl font-semibold text-[#3f1d2e] mb-2 tracking-tight">
             For {exp?.receiver_name || 'My Pookie'} ❤️
           </h1>
 
           {exp?.receiver_nickname && (
-            <p className="font-handwritten text-2xl text-rose-300/90 mb-3">
+            <p className="font-handwritten text-2xl text-rose-600 mb-2">
               &ldquo;To my {exp.receiver_nickname}&rdquo;
             </p>
           )}
 
-          <p className="text-white/70 mb-2 font-body text-base">
+          <p className="text-[#3f1d2e]/80 mb-2 font-body text-sm leading-relaxed">
             {exp?.sender_name ? `${exp.sender_name} made a secret love story just for you.` : 'Someone made a secret love story just for you.'}
           </p>
 
-          <p className="text-white/50 text-sm mb-8 font-body max-w-md mx-auto">
+          <p className="text-[#8f6479] text-xs mb-6 font-body leading-relaxed">
             This letter is private & protected. Please log in or create an account to unlock your love letter, view memories, and reply in private chat.
           </p>
 
           {/* Auth Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-sm mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href={`/login?redirect=/love/${tokenStr}`}
-              className="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-rose-400 to-lavender-400 text-white font-medium hover:shadow-xl hover:shadow-rose-500/40 transition-all hover:scale-105 flex items-center justify-center gap-2 text-sm"
+              className="flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-medium hover:shadow-lg transition-all hover:scale-105 flex items-center justify-center gap-2 text-xs"
             >
               <Heart className="w-4 h-4 fill-current" /> Log in to Unlock
             </Link>
             <Link
               href={`/signup?redirect=/love/${tokenStr}&name=${encodeURIComponent(exp?.receiver_name || '')}&role=receiver`}
-              className="flex-1 py-3.5 px-6 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium backdrop-blur-md transition-all hover:scale-105 flex items-center justify-center gap-2 text-sm"
+              className="flex-1 py-3 px-5 rounded-2xl bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 font-medium transition-all hover:scale-105 flex items-center justify-center gap-2 text-xs shadow-2xs"
             >
               Sign Up 💖
             </Link>
           </div>
 
-          {/* Quick Google Unlock */}
-          <div className="mt-3 max-w-sm mx-auto">
+          <div className="mt-4">
             <GoogleButton
               redirectUrl={`/love/${tokenStr}`}
               role="receiver"
@@ -376,7 +382,7 @@ export default function LoveExperiencePage() {
             />
           </div>
 
-          <p className="text-white/40 text-xs mt-6">
+          <p className="text-[#8f6479]/70 text-[11px] mt-4">
             🔒 Only authorized accounts can view this love letter.
           </p>
         </motion.div>
@@ -386,13 +392,13 @@ export default function LoveExperiencePage() {
 
   if (!opened) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1a1a2e] via-[#2d1b4e] to-[#1a1a2e] px-4 relative">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] px-4 relative overflow-hidden">
         {/* Floating top navigation if logged in */}
         {user && (
           <div className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between pointer-events-none">
             <Link
               href={profile?.role === 'sender' ? '/sender' : '/receiver'}
-              className="pointer-events-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium shadow-md backdrop-blur-md border border-white/20 transition hover:scale-105"
+              className="pointer-events-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-rose-700 text-xs font-medium shadow-md backdrop-blur-md border border-rose-200/60 transition hover:scale-105"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{profile?.role === 'sender' ? 'Sender Dashboard' : 'Receiver Dashboard'}</span>
@@ -400,57 +406,42 @@ export default function LoveExperiencePage() {
           </div>
         )}
 
-        {/* Floating hearts */}
+        {/* Dreamy floating soft pastel elements */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(8)].map((_, i) => (
+          {[...Array(12)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute text-rose-300/20"
-              initial={{ y: '100vh', x: `${10 + i * 12}%`, opacity: 0 }}
-              animate={{ y: '-10vh', opacity: [0, 0.4, 0] }}
-              transition={{ duration: 6 + i, repeat: Infinity, delay: i * 0.5 }}
+              className="absolute"
+              initial={{ y: '105vh', x: `${5 + i * 8}%`, opacity: 0, rotate: 0 }}
+              animate={{
+                y: '-10vh',
+                opacity: [0, 0.45, 0],
+                rotate: i % 2 === 0 ? 180 : -180,
+              }}
+              transition={{
+                duration: 9 + (i % 5) * 2,
+                repeat: Infinity,
+                delay: i * 0.7,
+                ease: 'linear',
+              }}
             >
-              <Heart className="w-5 h-5 fill-current" />
+              {i % 3 === 0 ? (
+                <GlossyHeart size={18 + (i % 3) * 6} glow={false} className="opacity-40" />
+              ) : (
+                <span className="text-xl sm:text-2xl opacity-35 select-none">
+                  {i % 2 === 0 ? '🌸' : '✨'}
+                </span>
+              )}
             </motion.div>
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="text-center max-w-lg"
-        >
-          {/* Animated envelope */}
-          <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
-            className="relative mx-auto mb-8"
-          >
-            <div className="w-32 h-24 mx-auto relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-400 to-lavender-400 rounded-lg shadow-2xl shadow-rose-500/30" />
-              <div className="absolute top-0 left-0 right-0 h-0 border-l-[64px] border-r-[64px] border-b-[40px] border-l-transparent border-r-transparent border-b-rose-300/80" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Heart className="w-10 h-10 text-white fill-white/30" />
-              </div>
-            </div>
-          </motion.div>
-
-          <h1 className="font-display text-3xl md:text-4xl text-white mb-3">
-            Pookie… I made something for you.
-          </h1>
-          <p className="text-white/60 mb-8 font-body">
-            Please give me 2 minutes. No pressure. Just me trying to say what I couldn't properly say.
-          </p>
-
-          <button
-            onClick={handleOpen}
-            className="group inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-rose-400 to-lavender-400 text-white text-lg font-medium hover:shadow-2xl hover:shadow-rose-500/40 transition-all hover:scale-105"
-          >
-            <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            Open it? 💌
-          </button>
-        </motion.div>
+        <InteractiveEnvelope
+          receiverName={exp?.receiver_name || 'My Pookie'}
+          senderName={exp?.sender_name || 'Someone special'}
+          subtitle="a little something I made with my whole heart"
+          onOpen={handleOpen}
+        />
 
         {exp?.music_url && <audio ref={audioRef} src={exp.music_url} loop />}
       </div>
@@ -460,8 +451,8 @@ export default function LoveExperiencePage() {
   const theme = exp?.theme || 'pink-dream';
   const themeConfig = THEME_CONFIG[theme];
   const isDark = theme === 'lavender-night' || theme === 'starry-romance';
-  const bgColor = isDark ? 'text-white' : 'text-rose-700';
-  const subColor = isDark ? 'text-white/60' : 'text-rose-400/70';
+  const bgColor = isDark ? 'text-white' : 'text-[#3f1d2e]';
+  const subColor = isDark ? 'text-white/60' : 'text-[#8f6479]';
 
   const dateOptions = [
     { key: 'coffee', label: 'Coffee', icon: Coffee },
@@ -541,43 +532,45 @@ export default function LoveExperiencePage() {
         </div>
       )}
 
+      {/* Floating Reaction Dock */}
+      <FloatingReactions isDark={isDark} />
+
       {/* Content sections */}
       <div className="relative z-10">
         {/* Personalized Intro */}
         <Section>
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-            <p className={`font-handwritten text-2xl ${subColor} mb-2`}>Hey,</p>
-            <h1 className="font-display text-4xl md:text-6xl font-bold mb-6" style={{ color: themeConfig.accent }}>
+            <p className={`font-handwritten text-2xl sm:text-3xl ${subColor} mb-2`}>Hey,</p>
+            <h1 className="font-serif-display text-4xl sm:text-6xl md:text-7xl font-semibold mb-6 text-[#3f1d2e] tracking-tight">
               {exp?.receiver_name || 'Pookie'} ❤️
             </h1>
-            <p className={`font-body text-lg ${subColor} mb-8`}>Before anything else…</p>
+            <p className={`font-body text-base sm:text-lg ${subColor} mb-8`}>Before anything else…</p>
             <motion.h2
               initial={{ opacity: 0, scale: 0.8 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 1, delay: 0.3 }}
-              className="font-display text-5xl md:text-7xl font-bold mb-4"
+              className="font-serif-display text-5xl sm:text-7xl md:text-8xl font-semibold mb-4 text-[#3f1d2e] tracking-tight"
             >
               I'm sorry.
             </motion.h2>
-            <p className={`font-body text-lg ${subColor} max-w-xl mx-auto`}>
+            <p className={`font-body text-base sm:text-lg ${subColor} max-w-xl mx-auto`}>
               Not the casual "sorry yaar" kind. The real one.
             </p>
           </motion.div>
         </Section>
 
-        {/* Apology Letter */}
+        {/* Apology Letter in Realistic Parchment Stationery */}
         <Section>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-6" style={{ color: themeConfig.accent }}>
-              Things I should have said properly…
-            </h2>
-            <div className={`glass ${isDark ? 'bg-white/5' : ''} rounded-2xl p-6 md:p-10 max-w-2xl mx-auto`}>
-              <p className="font-serif-body text-xl md:text-2xl leading-relaxed whitespace-pre-wrap text-center" style={{ color: isDark ? '#fff' : '#9d3d5c' }}>
-                {exp?.apology_message || '[Your apology message will appear here.]'}
-              </p>
-            </div>
-          </motion.div>
+          <ParchmentLetter
+            title="Things I should have said properly…"
+            senderName={exp?.sender_name}
+            receiverName={exp?.receiver_name}
+            content={exp?.apology_message || ''}
+            secretNote="P.S. You mean the world to me. I hate seeing you hurt, especially when it was because of my carelessness. I promise to be better."
+            isDark={isDark}
+            accentColor={themeConfig.accent}
+          />
         </Section>
 
         {/* Funny Boyfriend Court */}
@@ -1021,16 +1014,17 @@ export default function LoveExperiencePage() {
           </div>
         </Section>
 
-        {/* Final Love Letter */}
+        {/* Final Love Letter in Parchment Stationery */}
         <Section>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}>
-            <p className={`font-handwritten text-2xl ${subColor} mb-2`}>One last thing…</p>
-            <div className={`glass ${isDark ? 'bg-white/5' : ''} rounded-2xl p-6 md:p-10 max-w-2xl mx-auto`}>
-              <p className="font-serif-body text-xl md:text-2xl leading-relaxed whitespace-pre-wrap text-center" style={{ color: isDark ? '#fff' : '#9d3d5c' }}>
-                {exp?.final_letter || '[Your final love letter will appear here.]'}
-              </p>
-            </div>
-          </motion.div>
+          <ParchmentLetter
+            title="One last thing…"
+            senderName={exp?.sender_name}
+            receiverName={exp?.receiver_name}
+            content={exp?.final_letter || exp?.love_letter || ''}
+            secretNote="P.S. Whatever your answer is, I just want you to smile today. Take all the time you need. You will always be special to me. ❤️"
+            isDark={isDark}
+            accentColor={themeConfig.accent}
+          />
         </Section>
 
         {/* Final Invitation */}
@@ -1112,65 +1106,183 @@ export default function LoveExperiencePage() {
                 <p className="text-rose-400 text-sm mb-4">The best answer ever.</p>
 
                 {showDateSelection ? (
-                  <div className="glass rounded-3xl p-6 shadow-2xl border border-rose-100/80 bg-white/85">
-                    <h3 className="font-display text-xl font-semibold text-rose-700 mb-1">Our date?</h3>
-                    <p className="text-xs text-rose-400/80 mb-4">Pick an activity or continue straight to your dashboard.</p>
+                  <div className="glass rounded-3xl p-5 sm:p-6 shadow-2xl border border-rose-100/80 bg-white/95 max-h-[85vh] overflow-y-auto">
+                    <h3 className="font-display text-xl sm:text-2xl font-bold text-rose-700 mb-1">Our Next Date? 🥂</h3>
+                    <p className="text-xs text-rose-400/80 mb-4">Pick an activity, suggest your own special date, or continue to dashboard.</p>
 
-                    <div className="grid grid-cols-3 gap-2.5 mb-4">
+                    {/* Category Filter Pills */}
+                    <div className="flex gap-1 overflow-x-auto pb-2 mb-3 scrollbar-hide">
+                      <button
+                        type="button"
+                        onClick={() => setDateCategory('all')}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                          dateCategory === 'all'
+                            ? 'bg-rose-500 text-white shadow-xs'
+                            : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/60'
+                        }`}
+                      >
+                        🌟 All
+                      </button>
+                      {Object.entries(DATE_CATEGORIES).map(([catKey, cat]) => (
+                        <button
+                          type="button"
+                          key={catKey}
+                          onClick={() => setDateCategory(catKey)}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                            dateCategory === catKey
+                              ? 'bg-rose-500 text-white shadow-xs'
+                              : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/60'
+                          }`}
+                        >
+                          {cat.emoji} {cat.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Date Ideas Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
                       {(() => {
-                        const matched = dateOptions.filter((o) => exp?.date_options?.includes(o.key));
-                        const opts = (matched.length > 0) ? matched : dateOptions;
-                        return opts.map((opt) => (
-                          <button
-                            key={opt.key}
-                            onClick={() => setSelectedActivity(opt.key)}
-                            className={`p-3 rounded-2xl transition-all border text-center ${
-                              selectedActivity === opt.key
-                                ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md border-transparent scale-105'
-                                : 'bg-white/80 text-rose-600 hover:bg-rose-50 border-rose-100'
-                            }`}
-                          >
-                            <opt.icon className="w-5 h-5 mx-auto mb-1" />
-                            <p className="text-xs font-medium truncate">{opt.label}</p>
-                          </button>
-                        ));
+                        // Options prioritized: sender's offered options + preset catalog
+                        const offeredKeys = exp?.date_options || [];
+                        const pool = PRESET_DATE_IDEAS.filter(
+                          (p) => dateCategory === 'all' || p.category === dateCategory
+                        );
+
+                        // If all category, also prepend any custom non-preset options offered by sender
+                        const customOffered = dateCategory === 'all'
+                          ? offeredKeys.filter((k) => !PRESET_DATE_IDEAS.some((p) => p.key === k))
+                          : [];
+
+                        return (
+                          <>
+                            {customOffered.map((cOpt) => {
+                              const info = formatCustomDateIdea(cOpt);
+                              const isSelected = selectedActivity === cOpt;
+                              return (
+                                <button
+                                  key={cOpt}
+                                  type="button"
+                                  onClick={() => setSelectedActivity(cOpt)}
+                                  className={`p-2.5 rounded-2xl transition-all border text-left flex flex-col justify-between ${
+                                    isSelected
+                                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md border-transparent scale-[1.03]'
+                                      : 'bg-rose-50/70 text-rose-700 hover:bg-rose-100/80 border-rose-200'
+                                  }`}
+                                >
+                                  <span className="text-xl mb-1">{info.emoji}</span>
+                                  <span className="text-xs font-semibold leading-tight">{info.label}</span>
+                                </button>
+                              );
+                            })}
+                            {pool.map((opt) => {
+                              const isSelected = selectedActivity === opt.key;
+                              const isOfferedBySender = offeredKeys.includes(opt.key);
+                              return (
+                                <button
+                                  key={opt.key}
+                                  type="button"
+                                  onClick={() => setSelectedActivity(opt.key)}
+                                  className={`p-2.5 rounded-2xl transition-all border text-left flex flex-col justify-between relative ${
+                                    isSelected
+                                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md border-transparent scale-[1.03]'
+                                      : isOfferedBySender
+                                      ? 'bg-white text-rose-800 hover:bg-rose-50 border-rose-300 ring-1 ring-rose-200'
+                                      : 'bg-white/80 text-rose-600 hover:bg-rose-50 border-rose-100'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between w-full mb-1">
+                                    <span className="text-xl">{opt.emoji}</span>
+                                    {isOfferedBySender && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600 uppercase">
+                                        His Pick
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs font-semibold leading-tight">{opt.label}</span>
+                                </button>
+                              );
+                            })}
+                          </>
+                        );
                       })()}
                     </div>
 
+                    {/* Suggest Our Own Custom Date Idea */}
+                    <div className="mb-4 pt-3 border-t border-rose-100/80">
+                      <label className="text-xs font-bold text-rose-600 uppercase tracking-wider block mb-1.5 text-left">
+                        Or Suggest Your Own Date Idea ✨
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          value={customDateInput}
+                          onChange={(e) => setCustomDateInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (customDateInput.trim()) {
+                                setSelectedActivity(customDateInput.trim());
+                                setCustomDateInput('');
+                              }
+                            }
+                          }}
+                          placeholder="e.g. Stargazing on the roof 🔭, Baking together 🍪"
+                          className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-rose-200 outline-none text-rose-800 text-xs focus:ring-2 focus:ring-rose-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (customDateInput.trim()) {
+                              setSelectedActivity(customDateInput.trim());
+                              setCustomDateInput('');
+                            }
+                          }}
+                          disabled={!customDateInput.trim()}
+                          className="px-3 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-medium text-xs transition disabled:opacity-40"
+                        >
+                          Pick
+                        </button>
+                      </div>
+                    </div>
+
                     {selectedActivity && (
-                      <textarea
-                        value={dateNote}
-                        onChange={(e) => setDateNote(e.target.value)}
-                        placeholder="Add a sweet note or time (optional)..."
-                        rows={2}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-rose-200 outline-none text-rose-700 text-xs mb-3 resize-none focus:ring-2 focus:ring-rose-300"
-                      />
+                      <div className="mb-4 text-left p-3 rounded-xl bg-rose-50/80 border border-rose-200/80">
+                        <p className="text-xs font-semibold text-rose-700 mb-1">
+                          Chosen Date: <span className="font-bold">{formatCustomDateIdea(selectedActivity).emoji} {formatCustomDateIdea(selectedActivity).label}</span>
+                        </p>
+                        <textarea
+                          value={dateNote}
+                          onChange={(e) => setDateNote(e.target.value)}
+                          placeholder="Add a sweet note or time for him (optional)..."
+                          rows={2}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-rose-200 outline-none text-rose-700 text-xs resize-none focus:ring-2 focus:ring-rose-300"
+                        />
+                      </div>
                     )}
 
                     <div className="flex flex-col sm:flex-row gap-2 justify-center">
                       <button
                         onClick={() => handleDateSubmit(false)}
-                        disabled={submittingDate || redirecting}
-                        className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-medium hover:shadow-lg transition disabled:opacity-50 text-xs flex items-center justify-center gap-1.5"
+                        disabled={submittingDate || redirecting || !selectedActivity}
+                        className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold hover:shadow-lg transition disabled:opacity-50 text-xs flex items-center justify-center gap-1.5"
                       >
                         {submittingDate ? (
                           <>
                             <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Sending...</span>
+                            <span>Sending Date Request...</span>
                           </>
                         ) : redirecting ? (
                           <span>Redirecting to Dashboard... ❤️</span>
                         ) : (
-                          <span>Send Date Request ❤️</span>
+                          <span>Confirm Date Request ❤️</span>
                         )}
                       </button>
 
                       <button
                         onClick={() => handleDateSubmit(true)}
                         disabled={submittingDate || redirecting}
-                        className="py-3 px-4 rounded-xl bg-white/90 text-rose-600 font-medium hover:bg-white text-xs border border-rose-200/70 shadow-sm transition flex items-center justify-center gap-1"
+                        className="py-3 px-4 rounded-xl bg-white/90 text-rose-600 font-semibold hover:bg-white text-xs border border-rose-200/70 shadow-2xs transition flex items-center justify-center gap-1"
                       >
-                        <span>Dashboard</span>
+                        <span>Skip to Dashboard</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>

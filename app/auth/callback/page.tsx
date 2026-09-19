@@ -17,8 +17,18 @@ function CallbackContent() {
 
     const processAuth = async () => {
       try {
-        const errorParam = searchParams.get('error');
-        const errorDesc = searchParams.get('error_description');
+        // 1. Check for errors in both searchParams and hash fragment
+        let errorParam = searchParams.get('error');
+        let errorDesc = searchParams.get('error_description');
+
+        if (typeof window !== 'undefined' && window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          if (!errorParam && hashParams.get('error')) {
+            errorParam = hashParams.get('error');
+            errorDesc = hashParams.get('error_description');
+          }
+        }
+
         if (errorParam) {
           const q = new URLSearchParams();
           q.set('error', errorParam);
@@ -31,18 +41,51 @@ function CallbackContent() {
         const redirectParam = searchParams.get('redirect');
         const roleParam = searchParams.get('role');
 
+        // 2. Handle PKCE code exchange if present
         if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) {
-            console.error('Code exchange warning:', error.message);
+          try {
+            const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
+            if (exchangeErr) {
+              // May already have been consumed by detectSessionInUrl
+              console.warn('Auth code exchange notice:', exchangeErr.message);
+            }
+          } catch (e) {
+            console.warn('Code exchange handled:', e);
           }
         }
 
-        // Retrieve current authenticated session
-        const { data: { session } } = await supabase.auth.getSession();
+        // 3. Handle implicit token fragment if present (#access_token=...&refresh_token=...)
+        if (typeof window !== 'undefined' && window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          if (accessToken && refreshToken) {
+            try {
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+            } catch (e) {
+              console.warn('Token set error:', e);
+            }
+          }
+        }
+
+        // 4. Retrieve current session with small retry buffer for async detection
+        let session = null;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const { data } = await supabase.auth.getSession();
+          if (data?.session?.user) {
+            session = data.session;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
+
         if (!isMounted) return;
 
         if (!session?.user) {
+          // If still no session after attempts, redirect back to login
           router.replace('/login');
           return;
         }
@@ -56,8 +99,7 @@ function CallbackContent() {
           .eq('id', user.id)
           .maybeSingle();
 
-        // Determine user role:
-        // A receiver account is strictly created ONLY when someone signs up/logs in from a love link/QR code!
+        // Determine user role
         let assignedRole = existingProfile?.role;
         if (!assignedRole) {
           if (roleParam === 'receiver' || redirectParam?.startsWith('/love/')) {

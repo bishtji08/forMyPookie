@@ -51,9 +51,10 @@ export function GoogleButton({
     setLoading(true);
 
     try {
-      const baseUrl = getAppUrl();
+      // When running in the browser, always use the active window origin so PKCE tokens and cookies match
+      const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : getAppUrl();
       const targetRedirect = redirectUrl && redirectUrl.startsWith('/') ? redirectUrl : '';
-      const callbackUrl = new URL('/auth/callback', baseUrl);
+      const callbackUrl = new URL('/auth/callback', origin);
       if (targetRedirect) {
         callbackUrl.searchParams.set('redirect', targetRedirect);
       }

@@ -3,17 +3,22 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Heart, FileHeart, MessageCircle, Bell, Eye, ArrowRight, Sparkles } from 'lucide-react';
+import { Heart, FileHeart, MessageCircle, Bell, Eye, ArrowRight, Sparkles, Plus, CalendarHeart, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/hooks/use-toast';
 import type { Experience } from '@/lib/types';
+import { PRESET_DATE_IDEAS, formatCustomDateIdea } from '@/lib/date-ideas';
 
 export default function ReceiverOverview() {
   const { profile } = useAuth();
+  const { toast } = useToast();
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [suggestInput, setSuggestInput] = useState('');
+  const [suggesting, setSuggesting] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -46,6 +51,61 @@ export default function ReceiverOverview() {
     return <div className="flex items-center justify-center h-full p-8"><Heart className="w-8 h-8 text-rose-400 animate-pulse" /></div>;
   }
 
+  const primaryExp = experiences[0];
+
+  const handleSuggestDate = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!suggestInput.trim() || !primaryExp || !profile) return;
+    const idea = suggestInput.trim();
+    setSuggesting(true);
+
+    try {
+      // 1. Insert into date_requests
+      await supabase.from('date_requests').insert({
+        experience_id: primaryExp.id,
+        receiver_id: profile.id,
+        activity: idea,
+      });
+
+      // 2. Also append to experiences date_options if not present
+      const currentOpts = primaryExp.date_options || [];
+      if (!currentOpts.includes(idea)) {
+        await supabase
+          .from('experiences')
+          .update({ date_options: [...currentOpts, idea] })
+          .eq('id', primaryExp.id);
+        setExperiences((prev) =>
+          prev.map((ex) => (ex.id === primaryExp.id ? { ...ex, date_options: [...currentOpts, idea] } : ex))
+        );
+      }
+
+      // 3. Notify sender
+      if (primaryExp.sender_id) {
+        await supabase.from('notifications').insert({
+          user_id: primaryExp.sender_id,
+          type: 'response',
+          title: `${profile.name} suggested a date idea! 🥂✨`,
+          body: `She suggested: "${idea}"`,
+          experience_id: primaryExp.id,
+        });
+      }
+
+      toast({
+        title: 'Date idea sent! 🥂❤️',
+        description: `Your suggestion "${idea}" was shared with ${primaryExp.sender_name || 'your partner'}.`,
+      });
+      setSuggestInput('');
+    } catch (err: any) {
+      toast({
+        title: 'Could not send date idea',
+        description: err?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-4xl mx-auto w-full">
       <div className="mb-6 sm:mb-8">
@@ -54,6 +114,73 @@ export default function ReceiverOverview() {
         </h1>
         <p className="text-rose-400/70 text-xs sm:text-sm">Someone wrote something special for you.</p>
       </div>
+
+      {/* Date Ideas & Wishlist Card (if an experience is linked) */}
+      {primaryExp && (
+        <div className="glass rounded-3xl p-5 sm:p-6 mb-6 shadow-sm border border-rose-200/50 bg-white/75">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <CalendarHeart className="w-5 h-5 text-rose-500" />
+              <h2 className="font-display text-lg sm:text-xl font-bold text-rose-700">
+                Plan Our Next Date with {primaryExp.sender_name || 'Your Partner'}
+              </h2>
+            </div>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-600 font-medium">
+              Interactive
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-rose-400/70 mb-4">
+            Suggest a date idea you&apos;d love to go on together. He&apos;ll be notified immediately!
+          </p>
+
+          {/* Quick suggestion input */}
+          <form onSubmit={handleSuggestDate} className="flex gap-2 mb-4">
+            <input
+              value={suggestInput}
+              onChange={(e) => setSuggestInput(e.target.value)}
+              placeholder="e.g. Picnic at sunset 🧺, Late night bowling 🎳, Making sushi 🍣"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-rose-200/80 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none text-rose-700 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={!suggestInput.trim() || suggesting}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-medium text-xs transition disabled:opacity-40 flex items-center gap-1.5 shadow-sm"
+            >
+              {suggesting ? (
+                <span>Sending...</span>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  <span>Suggest Date</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Offered date options pills */}
+          {primaryExp.date_options && primaryExp.date_options.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-rose-500 uppercase tracking-wider mb-2">
+                Offered Date Options & Ideas:
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {primaryExp.date_options.map((opt) => {
+                  const info = formatCustomDateIdea(opt);
+                  return (
+                    <span
+                      key={opt}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium"
+                    >
+                      <span>{info.emoji}</span>
+                      <span>{info.label}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {experiences.length === 0 ? (
         <div className="glass rounded-2xl p-12 text-center">

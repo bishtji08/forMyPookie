@@ -9,6 +9,11 @@ import {
 import type { Experience, Memory, FunnyMoment, LoveReason, GalleryItem, ResponseStatus, ExperienceTheme } from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
 import { Footer } from '@/components/footer';
+import { ParchmentLetter } from '@/components/experience/parchment-letter';
+import { InteractiveEnvelope } from '@/components/experience/interactive-envelope';
+import { FloatingReactions } from '@/components/experience/floating-reactions';
+import { PRESET_DATE_IDEAS, DATE_CATEGORIES, formatCustomDateIdea } from '@/lib/date-ideas';
+import { GlossyHeart } from '@/components/experience/glossy-heart';
 
 const demoExp: Experience = {
   id: 'demo',
@@ -59,11 +64,14 @@ export default function DemoExperiencePage() {
   const [response, setResponse] = useState<ResponseStatus | null>(null);
   const [showDateSelection, setShowDateSelection] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+  const [customDateInput, setCustomDateInput] = useState('');
+  const [dateCategory, setDateCategory] = useState<string>('all');
   const [loveMeterValue, setLoveMeterValue] = useState(0);
   const [loveMeterCalculating, setLoveMeterCalculating] = useState(false);
   const [loveMeterDone, setLoveMeterDone] = useState(false);
   const [gameAnswer, setGameAnswer] = useState<string | null>(null);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [dateConfirmed, setDateConfirmed] = useState(false);
 
   const handleOpen = () => setOpened(true);
 
@@ -94,77 +102,87 @@ export default function DemoExperiencePage() {
   const theme = demoExp.theme;
   const themeConfig = THEME_CONFIG[theme];
   const isDark = false;
-  const bgColor = 'text-rose-700';
-  const subColor = 'text-rose-400/70';
-
-  const dateOptions = [
-    { key: 'coffee', label: 'Coffee', icon: Coffee },
-    { key: 'dinner', label: 'Dinner', icon: Utensils },
-    { key: 'movie', label: 'Movie', icon: Film },
-    { key: 'walk', label: 'Walk', icon: Moon },
-    { key: 'drive', label: 'Long Drive', icon: Car },
-    { key: 'surprise', label: 'Surprise me', icon: Sparkles },
-  ];
+  const bgColor = 'text-[#3f1d2e]';
+  const subColor = 'text-[#8f6479]';
 
   if (!opened) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1a1a2e] via-[#2d1b4e] to-[#1a1a2e] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] px-4 relative overflow-hidden">
+        {/* Dreamy floating soft pastel elements */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(8)].map((_, i) => (
-            <motion.div key={i} className="absolute text-rose-300/20" initial={{ y: '100vh', x: `${10 + i * 12}%`, opacity: 0 }} animate={{ y: '-10vh', opacity: [0, 0.4, 0] }} transition={{ duration: 6 + i, repeat: Infinity, delay: i * 0.5 }}>
-              <Heart className="w-5 h-5 fill-current" />
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute"
+              initial={{ y: '105vh', x: `${5 + i * 8}%`, opacity: 0, rotate: 0 }}
+              animate={{
+                y: '-10vh',
+                opacity: [0, 0.45, 0],
+                rotate: i % 2 === 0 ? 180 : -180,
+              }}
+              transition={{
+                duration: 9 + (i % 5) * 2,
+                repeat: Infinity,
+                delay: i * 0.7,
+                ease: 'linear',
+              }}
+            >
+              {i % 3 === 0 ? (
+                <GlossyHeart size={18 + (i % 3) * 6} glow={false} className="opacity-40" />
+              ) : (
+                <span className="text-xl sm:text-2xl opacity-35 select-none">
+                  {i % 2 === 0 ? '🌸' : '✨'}
+                </span>
+              )}
             </motion.div>
           ))}
         </div>
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="text-center max-w-lg relative z-10">
-          <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }} className="relative mx-auto mb-8">
-            <div className="w-32 h-24 mx-auto relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-rose-400 to-lavender-400 rounded-lg shadow-2xl shadow-rose-500/30" />
-              <div className="absolute top-0 left-0 right-0 h-0 border-l-[64px] border-r-[64px] border-b-[40px] border-l-transparent border-r-transparent border-b-rose-300/80" />
-              <div className="absolute inset-0 flex items-center justify-center"><Heart className="w-10 h-10 text-white fill-white/30" /></div>
-            </div>
-          </motion.div>
-          <h1 className="font-display text-3xl md:text-4xl text-white mb-3">Pookie… I made something for you.</h1>
-          <p className="text-white/60 mb-8 font-body">Please give me 2 minutes. No pressure. Just me trying to say what I couldn't properly say.</p>
-          <button onClick={handleOpen} className="group inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-rose-400 to-lavender-400 text-white text-lg font-medium hover:shadow-2xl hover:shadow-rose-500/40 transition-all hover:scale-105">
-            <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" /> Open it? 💌
-          </button>
-          <p className="text-white/30 text-xs mt-8">This is a demo experience. Create your own at For My Pookie.</p>
-        </motion.div>
+        <InteractiveEnvelope
+          receiverName={demoExp.receiver_name}
+          senderName={demoExp.sender_name}
+          subtitle="a little something I made with my whole heart"
+          onOpen={handleOpen}
+        />
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b ${themeConfig.gradient} ${bgColor}`}>
+    <div className="min-h-screen bg-gradient-to-b from-[#fdf5fd] via-[#fbf0fa] to-[#fff7ee] text-[#3f1d2e]">
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {[...Array(6)].map((_, i) => (
           <motion.div key={i} className="absolute" initial={{ y: '100vh', x: `${Math.random() * 100}%`, opacity: 0 }} animate={{ y: '-10vh', opacity: [0, 0.15, 0] }} transition={{ duration: 8 + i * 2, repeat: Infinity, delay: i * 1.5 }}>
-            <Heart className="w-4 h-4 fill-current" style={{ color: themeConfig.accent }} />
+            <Heart className="w-4 h-4 fill-current text-rose-400" />
           </motion.div>
         ))}
       </div>
+
+      {/* Floating Reaction Dock */}
+      <FloatingReactions isDark={isDark} />
 
       <div className="relative z-10">
         {/* Intro */}
         <Section>
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <p className={`font-handwritten text-2xl ${subColor} mb-2`}>Hey,</p>
-            <h1 className="font-display text-4xl md:text-6xl font-bold mb-6" style={{ color: themeConfig.accent }}>{demoExp.receiver_name} ❤️</h1>
-            <p className={`font-body text-lg ${subColor} mb-8`}>Before anything else…</p>
-            <motion.h2 initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.3 }} className="font-display text-5xl md:text-7xl font-bold mb-4">I'm sorry.</motion.h2>
-            <p className={`font-body text-lg ${subColor} max-w-xl mx-auto`}>Not the casual "sorry yaar" kind. The real one.</p>
+            <p className={`font-handwritten text-2xl sm:text-3xl ${subColor} mb-2`}>Hey,</p>
+            <h1 className="font-serif-display text-4xl sm:text-6xl md:text-7xl font-semibold mb-6 text-[#3f1d2e] tracking-tight">{demoExp.receiver_name} ❤️</h1>
+            <p className={`font-body text-base sm:text-lg ${subColor} mb-8`}>Before anything else…</p>
+            <motion.h2 initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.3 }} className="font-serif-display text-5xl sm:text-7xl md:text-8xl font-semibold mb-4 text-[#3f1d2e] tracking-tight">I'm sorry.</motion.h2>
+            <p className={`font-body text-base sm:text-lg ${subColor} max-w-xl mx-auto`}>Not the casual "sorry yaar" kind. The real one.</p>
           </motion.div>
         </Section>
 
-        {/* Apology */}
+        {/* Apology in Parchment Stationery */}
         <Section>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-6" style={{ color: themeConfig.accent }}>Things I should have said properly…</h2>
-            <div className="glass rounded-2xl p-6 md:p-10 max-w-2xl mx-auto">
-              <p className="font-serif-body text-xl md:text-2xl leading-relaxed whitespace-pre-wrap text-center text-rose-700">{demoExp.apology_message}</p>
-            </div>
-          </motion.div>
+          <ParchmentLetter
+            title="Things I should have said properly…"
+            senderName={demoExp.sender_name}
+            receiverName={demoExp.receiver_name}
+            content={demoExp.apology_message}
+            secretNote="P.S. You deserve the best version of me, and I promise to give you exactly that."
+            isDark={isDark}
+            accentColor={themeConfig.accent}
+          />
         </Section>
 
         {/* Funny Court */}
@@ -307,13 +325,18 @@ export default function DemoExperiencePage() {
           </div>
         </Section>
 
-        {/* Final Letter */}
+        {/* Final Letter in Parchment Stationery */}
         <Section>
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <p className={`font-handwritten text-2xl ${subColor} mb-2`}>One last thing…</p>
-            <div className="glass rounded-2xl p-6 md:p-10 max-w-2xl mx-auto">
-              <p className="font-serif-body text-xl md:text-2xl leading-relaxed whitespace-pre-wrap text-center text-rose-700">{demoExp.final_letter}</p>
-            </div>
+            <ParchmentLetter
+              title="One last thing…"
+              senderName={demoExp.sender_name}
+              receiverName={demoExp.receiver_name}
+              content={demoExp.final_letter || ''}
+              secretNote="P.S. Whatever you decide, thank you for being you."
+              isDark={isDark}
+              accentColor={themeConfig.accent}
+            />
           </motion.div>
         </Section>
 
@@ -348,18 +371,171 @@ export default function DemoExperiencePage() {
                   {i % 3 === 0 ? <Heart className="w-6 h-6 fill-rose-400 text-rose-400" /> : i % 3 === 1 ? <Sparkles className="w-5 h-5 text-amber-400" /> : <Star className="w-5 h-5 fill-amber-300 text-amber-300" />}
                 </motion.div>
               ))}
-              <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} className="text-center max-w-lg relative z-10">
-                <h1 className="font-display text-4xl md:text-6xl font-bold text-rose-600 mb-4">SHE SAID YES 😭❤️</h1>
+              <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center max-w-md w-full relative z-10 py-6">
+                <h1 className="font-display text-4xl md:text-5xl font-bold text-rose-600 mb-2">SHE SAID YES 😭❤️</h1>
+                <p className="text-rose-400 text-sm mb-4">The best answer ever.</p>
+
                 {showDateSelection && (
-                  <div className="glass rounded-2xl p-6 mt-6">
-                    <h3 className="font-display text-xl font-semibold text-rose-700 mb-4">Our date?</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {dateOptions.map((opt) => (
-                        <button key={opt.key} onClick={() => setSelectedActivity(opt.key)} className={`p-4 rounded-xl transition-all ${selectedActivity === opt.key ? 'bg-gradient-to-r from-rose-400 to-lavender-400 text-white shadow-lg' : 'bg-white/60 text-rose-600 hover:bg-rose-50'}`}>
-                          <opt.icon className="w-5 h-5 mx-auto mb-1" /><p className="text-sm font-medium">{opt.label}</p>
+                  <div className="glass rounded-3xl p-5 sm:p-6 shadow-2xl border border-rose-100/80 bg-white/95 max-h-[85vh] overflow-y-auto">
+                    {dateConfirmed ? (
+                      <div className="p-4 text-center">
+                        <div className="text-4xl mb-2">🎉🥂✨</div>
+                        <h4 className="font-display text-xl font-bold text-rose-700 mb-1">It's a Date!</h4>
+                        <p className="text-sm text-rose-600 mb-4">
+                          You picked: <span className="font-bold">{selectedActivity ? formatCustomDateIdea(selectedActivity).emoji + ' ' + formatCustomDateIdea(selectedActivity).label : 'A special surprise!'}</span>
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResponse(null);
+                            setShowDateSelection(false);
+                            setDateConfirmed(false);
+                            setSelectedActivity(null);
+                          }}
+                          className="py-2.5 px-6 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-medium text-xs transition shadow-sm"
+                        >
+                          Back to Experience
                         </button>
-                      ))}
-                    </div>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="font-display text-xl sm:text-2xl font-bold text-rose-700 mb-1">Our Next Date? 🥂</h3>
+                        <p className="text-xs text-rose-400/80 mb-4">Pick an activity or suggest your own special idea.</p>
+
+                        {/* Category Filter Pills */}
+                        <div className="flex gap-1 overflow-x-auto pb-2 mb-3 scrollbar-hide">
+                          <button
+                            type="button"
+                            onClick={() => setDateCategory('all')}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                              dateCategory === 'all'
+                                ? 'bg-rose-500 text-white shadow-xs'
+                                : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/60'
+                            }`}
+                          >
+                            🌟 All
+                          </button>
+                          {Object.entries(DATE_CATEGORIES).map(([catKey, cat]) => (
+                            <button
+                              type="button"
+                              key={catKey}
+                              onClick={() => setDateCategory(catKey)}
+                              className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                                dateCategory === catKey
+                                  ? 'bg-rose-500 text-white shadow-xs'
+                                  : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/60'
+                              }`}
+                            >
+                              {cat.emoji} {cat.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Date Ideas Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                          {(() => {
+                            const offeredKeys = demoExp.date_options || [];
+                            const pool = PRESET_DATE_IDEAS.filter(
+                              (p) => dateCategory === 'all' || p.category === dateCategory
+                            );
+                            return pool.map((opt) => {
+                              const isSelected = selectedActivity === opt.key;
+                              const isOffered = offeredKeys.includes(opt.key);
+                              return (
+                                <button
+                                  key={opt.key}
+                                  type="button"
+                                  onClick={() => setSelectedActivity(opt.key)}
+                                  className={`p-2.5 rounded-2xl transition-all border text-left flex flex-col justify-between relative ${
+                                    isSelected
+                                      ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md border-transparent scale-[1.03]'
+                                      : isOffered
+                                      ? 'bg-white text-rose-800 hover:bg-rose-50 border-rose-300 ring-1 ring-rose-200'
+                                      : 'bg-white/80 text-rose-600 hover:bg-rose-50 border-rose-100'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between w-full mb-1">
+                                    <span className="text-xl">{opt.emoji}</span>
+                                    {isOffered && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600 uppercase">
+                                        His Pick
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs font-semibold leading-tight">{opt.label}</span>
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+
+                        {/* Custom Date Input */}
+                        <div className="mb-4 pt-3 border-t border-rose-100/80">
+                          <label className="text-xs font-bold text-rose-600 uppercase tracking-wider block mb-1.5 text-left">
+                            Or Suggest Your Own Date Idea ✨
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              value={customDateInput}
+                              onChange={(e) => setCustomDateInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (customDateInput.trim()) {
+                                    setSelectedActivity(customDateInput.trim());
+                                    setCustomDateInput('');
+                                  }
+                                }
+                              }}
+                              placeholder="e.g. Stargazing on the roof 🔭, Baking together 🍪"
+                              className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-rose-200 outline-none text-rose-800 text-xs focus:ring-2 focus:ring-rose-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (customDateInput.trim()) {
+                                  setSelectedActivity(customDateInput.trim());
+                                  setCustomDateInput('');
+                                }
+                              }}
+                              disabled={!customDateInput.trim()}
+                              className="px-3 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-medium text-xs transition disabled:opacity-40"
+                            >
+                              Pick
+                            </button>
+                          </div>
+                        </div>
+
+                        {selectedActivity && (
+                          <div className="mb-4 text-left p-3 rounded-xl bg-rose-50/80 border border-rose-200/80">
+                            <p className="text-xs font-semibold text-rose-700">
+                              Chosen Date: <span className="font-bold">{formatCustomDateIdea(selectedActivity).emoji} {formatCustomDateIdea(selectedActivity).label}</span>
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setDateConfirmed(true)}
+                            disabled={!selectedActivity}
+                            className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold hover:shadow-lg transition disabled:opacity-50 text-xs flex items-center justify-center gap-1.5"
+                          >
+                            Confirm Date (Demo) ❤️
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResponse(null);
+                              setShowDateSelection(false);
+                            }}
+                            className="py-3 px-4 rounded-xl bg-white/90 text-rose-600 font-semibold hover:bg-white text-xs border border-rose-200/70 transition"
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </motion.div>

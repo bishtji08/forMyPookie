@@ -10,9 +10,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Playfair Display', 'serif'],
-        serif: ['Cormorant Garamond', 'serif'],
-        hand: ['Caveat', 'cursive'],
+        display: ['Cormorant Garamond', 'Playfair Display', 'serif'],
+        serif: ['Cormorant Garamond', 'Lora', 'serif'],
+        hand: ['Dancing Script', 'Caveat', 'cursive'],
+        script: ['Dancing Script', 'cursive'],
         body: ['Poppins', 'Inter', 'sans-serif'],
         poppins: ['Poppins', 'sans-serif'],
       },
