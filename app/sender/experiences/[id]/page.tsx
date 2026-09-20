@@ -495,19 +495,28 @@ export default function ExperienceDetailPage() {
                             ? 'border-rose-500 bg-rose-50/80 shadow-md ring-2 ring-rose-300/40 scale-[1.02]'
                             : 'border-rose-100 hover:border-rose-200 bg-white/70'
                         }`}
+                        style={{ fontFamily: config.typography.metadata || 'inherit' }}
                       >
-                        <div className={`h-12 rounded-xl bg-gradient-to-br ${config.gradient} mb-2 shadow-xs flex items-center justify-center`}>
-                          <span className="text-2xl drop-shadow-sm">
-                            {key === 'pink-dream' ? '🌸' : key === 'lavender-night' ? '🌙' : key === 'sunset-love' ? '🌅' : key === 'minimal-cream' ? '✨' : '🌌'}
-                          </span>
+                        <div className={`h-16 rounded-xl bg-gradient-to-br ${config.gradient} mb-2 shadow-xs p-2.5`}>
+                          <div className="h-full w-full rounded-lg border border-white/20 bg-black/5 backdrop-blur-[2px] p-2 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                              <span className="text-lg">{config.decorativeIcon}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-sm">{isDark ? 'Dark' : 'Light'}</span>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/80">Letter</p>
+                              <div className="h-1.5 w-10 rounded-full bg-white/80" />
+                              <div className="h-1.5 w-8 rounded-full bg-white/40" />
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold text-rose-900 truncate">{config.name}</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-[11px] font-bold text-rose-900 truncate">{config.name}</p>
+                            <span className="text-[9px] block mt-1 text-rose-500/80">{config.description}</span>
+                          </div>
                           {isSelected && <Check className="w-3.5 h-3.5 text-rose-600 stroke-[3] shrink-0" />}
                         </div>
-                        <span className={`text-[10px] inline-block mt-0.5 font-medium ${isDark ? 'text-indigo-600' : 'text-amber-600'}`}>
-                          {isDark ? 'Dark Mode' : 'Light Mode'}
-                        </span>
                       </button>
                     );
                   })}

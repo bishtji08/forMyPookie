@@ -155,11 +155,27 @@ export interface DateRequest {
   created_at: string;
 }
 
+export interface ThemeTypography {
+  display: string;
+  heading: string;
+  body: string;
+  script: string;
+  button: string;
+  metadata: string;
+}
+
 export interface ThemeStyleConfig {
+  id: ExperienceTheme;
   name: string;
+  description: string;
   gradient: string;
   accent: string;
   isDark: boolean;
+  typography: ThemeTypography;
+  paperTexture: string;
+  sealStyle: string;
+  cardStyle: string;
+  canvasBg: string;
   unopenedBg: string;
   openedBg: string;
   envBox: string;
@@ -183,20 +199,36 @@ export interface ThemeStyleConfig {
   tapeColor: string;
   polaroidInnerBg: string;
   glassBg: string;
+  sectionGlow: string;
+  decorativeIcon: string;
 }
 
 export const THEME_CONFIG: Record<ExperienceTheme, ThemeStyleConfig> = {
   'pink-dream': {
+    id: 'pink-dream',
     name: 'Pink Dream',
+    description: 'Soft romantic stationery',
     gradient: 'from-[#fbf2fc] via-[#faebf7] to-[#fff5ea]',
     accent: '#e85d8d',
     isDark: false,
+    typography: {
+      display: '"Playfair Display", "Cormorant Garamond", Georgia, serif',
+      heading: '"Playfair Display", "Cormorant Garamond", Georgia, serif',
+      body: '"Lora", "Cormorant Garamond", Georgia, serif',
+      script: '"Great Vibes", "Dancing Script", cursive',
+      button: '"Poppins", sans-serif',
+      metadata: '"Poppins", sans-serif',
+    },
+    paperTexture: 'bg-[#fffefb] shadow-[0_20px_50px_rgba(244,114,182,0.15)]',
+    sealStyle: 'bg-rose-500/10 shadow-rose-300/30',
+    cardStyle: 'rounded-3xl',
+    canvasBg: 'bg-gradient-to-br from-[#fbf2fc] via-[#faebf7] to-[#fff5ea] text-[#3f1d2e] border-pink-200/80',
     unopenedBg: 'from-[#fbf2fc] via-[#faebf7] to-[#fff5ea]',
     openedBg: 'from-[#fbf2fc] via-[#faebf7] to-[#fff5ea]',
     envBox: 'bg-gradient-to-b from-[#fbf2fc] via-[#f7eaf8] to-[#f3e3f5] border-white shadow-[0_25px_60px_-15px_rgba(225,175,215,0.55)]',
     envFlapFill: '#faedf9',
     envTitleColor: 'text-[#3f1d2e]',
-    envSubColor: 'text-[#916b7f]',
+    envSubColor: 'text-[#d4789b]',
     envTapColor: 'text-[#d4789b]',
     titleColor: 'text-[#3f1d2e]',
     textColor: 'text-[#2b101e]',
@@ -214,18 +246,34 @@ export const THEME_CONFIG: Record<ExperienceTheme, ThemeStyleConfig> = {
     tapeColor: 'bg-rose-200/70',
     polaroidInnerBg: 'bg-gradient-to-br from-rose-100/80 to-purple-100/80',
     glassBg: 'bg-white/80 border-pink-100/80',
+    sectionGlow: 'shadow-[0_18px_45px_rgba(244,114,182,0.12)]',
+    decorativeIcon: '💌',
   },
   'lavender-night': {
+    id: 'lavender-night',
     name: 'Lavender Night',
+    description: 'Midnight secret letter',
     gradient: 'from-[#120f24] via-[#1e153b] to-[#120f24]',
     accent: '#b794f6',
     isDark: true,
+    typography: {
+      display: '"Cormorant Garamond", Georgia, serif',
+      heading: '"Cormorant Garamond", Georgia, serif',
+      body: '"Lora", Georgia, serif',
+      script: '"Dancing Script", cursive',
+      button: '"Poppins", sans-serif',
+      metadata: '"Poppins", sans-serif',
+    },
+    paperTexture: 'bg-[#1e1438]/95 shadow-purple-950/80',
+    sealStyle: 'bg-purple-500/20 shadow-purple-900/50',
+    cardStyle: 'rounded-3xl',
+    canvasBg: 'bg-gradient-to-b from-[#120f24] via-[#1e153b] to-[#120f24] text-[#f5edff] border-purple-500/30',
     unopenedBg: 'from-[#120f24] via-[#1e153b] to-[#120f24]',
     openedBg: 'from-[#120f24] via-[#1e153b] to-[#120f24]',
     envBox: 'bg-gradient-to-b from-[#2b1c4a] via-[#23163e] to-[#1c1133] border-purple-400/40 shadow-[0_25px_60px_-15px_rgba(139,92,246,0.35)]',
     envFlapFill: '#35235a',
     envTitleColor: 'text-[#ffffff]',
-    envSubColor: 'text-[#d8b4fe]',
+    envSubColor: 'text-[#c084fc]',
     envTapColor: 'text-[#c084fc]',
     titleColor: 'text-[#ffffff]',
     textColor: 'text-[#f5edff]',
@@ -243,18 +291,34 @@ export const THEME_CONFIG: Record<ExperienceTheme, ThemeStyleConfig> = {
     tapeColor: 'bg-purple-300/60',
     polaroidInnerBg: 'bg-gradient-to-br from-purple-900/60 to-indigo-900/60',
     glassBg: 'bg-purple-950/60 border-purple-400/30 text-white',
+    sectionGlow: 'shadow-[0_18px_45px_rgba(168,85,247,0.16)]',
+    decorativeIcon: '🌙',
   },
   'sunset-love': {
+    id: 'sunset-love',
     name: 'Sunset Love',
+    description: 'Warm handwritten memories',
     gradient: 'from-[#fff7ed] via-[#fee7d6] to-[#fdd5c4]',
     accent: '#f97316',
     isDark: false,
+    typography: {
+      display: '"Italiana", Georgia, serif',
+      heading: '"Italiana", Georgia, serif',
+      body: '"Lora", Georgia, serif',
+      script: '"Alex Brush", cursive',
+      button: '"Poppins", sans-serif',
+      metadata: '"Poppins", sans-serif',
+    },
+    paperTexture: 'bg-[#fffdfa] shadow-[0_20px_50px_rgba(251,146,60,0.15)]',
+    sealStyle: 'bg-orange-500/20 shadow-orange-300/50',
+    cardStyle: 'rounded-3xl',
+    canvasBg: 'bg-gradient-to-br from-[#fff7ed] via-[#fee7d6] to-[#fdd5c4] text-[#451e11] border-orange-200/80',
     unopenedBg: 'from-[#fff7ed] via-[#fee7d6] to-[#fdd5c4]',
     openedBg: 'from-[#fff7ed] via-[#fee7d6] to-[#fdd5c4]',
     envBox: 'bg-gradient-to-b from-[#fff1e6] via-[#fde3d2] to-[#fad3be] border-white shadow-[0_25px_60px_-15px_rgba(255,154,118,0.4)]',
     envFlapFill: '#fde7d8',
     envTitleColor: 'text-[#451e11]',
-    envSubColor: 'text-[#9e5c43]',
+    envSubColor: 'text-[#f97316]',
     envTapColor: 'text-[#f97316]',
     titleColor: 'text-[#451e11]',
     textColor: 'text-[#2d130a]',
@@ -272,18 +336,34 @@ export const THEME_CONFIG: Record<ExperienceTheme, ThemeStyleConfig> = {
     tapeColor: 'bg-orange-200/70',
     polaroidInnerBg: 'bg-gradient-to-br from-amber-100/80 to-orange-100/80',
     glassBg: 'bg-white/85 border-orange-200/80',
+    sectionGlow: 'shadow-[0_18px_45px_rgba(249,115,22,0.12)]',
+    decorativeIcon: '🌅',
   },
   'minimal-cream': {
+    id: 'minimal-cream',
     name: 'Minimal Cream',
+    description: 'Elegant luxury stationery',
     gradient: 'from-[#fbfaf7] via-[#f5f0e6] to-[#ebe3d5]',
     accent: '#b48c4a',
     isDark: false,
+    typography: {
+      display: '"Cormorant Garamond", Georgia, serif',
+      heading: '"Cormorant Garamond", Georgia, serif',
+      body: '"Lora", Georgia, serif',
+      script: '"Great Vibes", cursive',
+      button: '"Poppins", sans-serif',
+      metadata: '"Poppins", sans-serif',
+    },
+    paperTexture: 'bg-[#fcfbf9] shadow-amber-900/10',
+    sealStyle: 'bg-amber-500/20 shadow-amber-900/20',
+    cardStyle: 'rounded-3xl',
+    canvasBg: 'bg-gradient-to-br from-[#fbfaf7] via-[#f5f0e6] to-[#ebe3d5] text-[#30261c] border-amber-200/60',
     unopenedBg: 'from-[#fbfaf7] via-[#f5f0e6] to-[#ebe3d5]',
     openedBg: 'from-[#fbfaf7] via-[#f5f0e6] to-[#ebe3d5]',
     envBox: 'bg-gradient-to-b from-[#f8f5ee] via-[#efe8dc] to-[#e4dac8] border-[#e2d5c0] shadow-[0_25px_60px_-15px_rgba(180,160,130,0.35)]',
     envFlapFill: '#f3ecde',
     envTitleColor: 'text-[#30261c]',
-    envSubColor: 'text-[#82725e]',
+    envSubColor: 'text-[#b48c4a]',
     envTapColor: 'text-[#b48c4a]',
     titleColor: 'text-[#30261c]',
     textColor: 'text-[#201912]',
@@ -301,18 +381,34 @@ export const THEME_CONFIG: Record<ExperienceTheme, ThemeStyleConfig> = {
     tapeColor: 'bg-amber-200/70',
     polaroidInnerBg: 'bg-gradient-to-br from-amber-100/80 to-stone-200/80',
     glassBg: 'bg-white/90 border-amber-200/60',
+    sectionGlow: 'shadow-[0_10px_25px_rgba(180,140,74,0.06)]',
+    decorativeIcon: '✨',
   },
   'starry-romance': {
+    id: 'starry-romance',
     name: 'Starry Romance',
+    description: 'Cinematic night love story',
     gradient: 'from-[#060a12] via-[#0d1527] to-[#060a12]',
     accent: '#60a5fa',
     isDark: true,
+    typography: {
+      display: '"Playfair Display", Georgia, serif',
+      heading: '"Playfair Display", Georgia, serif',
+      body: '"Cormorant Garamond", Georgia, serif',
+      script: '"Dancing Script", cursive',
+      button: '"Poppins", sans-serif',
+      metadata: '"Poppins", sans-serif',
+    },
+    paperTexture: 'bg-[#0e162a]/95 shadow-blue-950/80',
+    sealStyle: 'bg-blue-500/20 shadow-blue-900/50',
+    cardStyle: 'rounded-3xl',
+    canvasBg: 'bg-gradient-to-b from-[#060a12] via-[#0d1527] to-[#060a12] text-[#eef4ff] border-blue-500/30',
     unopenedBg: 'from-[#060a12] via-[#0d1527] to-[#060a12]',
     openedBg: 'from-[#060a12] via-[#0d1527] to-[#060a12]',
     envBox: 'bg-gradient-to-b from-[#131e38] via-[#0f182e] to-[#0a1122] border-blue-400/40 shadow-[0_25px_60px_-15px_rgba(59,130,246,0.35)]',
     envFlapFill: '#182647',
     envTitleColor: 'text-[#ffffff]',
-    envSubColor: 'text-[#93c5fd]',
+    envSubColor: 'text-[#60a5fa]',
     envTapColor: 'text-[#60a5fa]',
     titleColor: 'text-[#ffffff]',
     textColor: 'text-[#eef4ff]',
@@ -330,5 +426,7 @@ export const THEME_CONFIG: Record<ExperienceTheme, ThemeStyleConfig> = {
     tapeColor: 'bg-blue-300/60',
     polaroidInnerBg: 'bg-gradient-to-br from-blue-950/80 to-slate-900/80',
     glassBg: 'bg-[#0f172a]/80 border-blue-400/30 text-white',
+    sectionGlow: 'shadow-[0_18px_45px_rgba(96,165,250,0.15)]',
+    decorativeIcon: '🌌',
   },
 };

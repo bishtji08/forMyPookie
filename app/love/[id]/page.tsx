@@ -63,11 +63,12 @@ export default function LoveExperiencePage() {
   const [easterEgg, setEasterEgg] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // If not logged in, redirect to signup or login
+  // If unauthenticated user tries to set opened to true directly via URL, redirect them to login
   useEffect(() => {
     if (authLoading) return;
-    if (!user && idOrToken) {
-      router.replace(`/signup?redirect=/love/${encodeURIComponent(idOrToken)}&role=receiver`);
+    const isTryingToOpen = typeof window !== 'undefined' && window.location.search.includes('opened=true');
+    if (!user && idOrToken && isTryingToOpen) {
+      router.replace(`/signup?redirect=/love/${encodeURIComponent(idOrToken)}?opened=true&role=receiver`);
     }
   }, [authLoading, user, idOrToken, router]);
 
@@ -84,7 +85,6 @@ export default function LoveExperiencePage() {
       setLoading(true);
       setNotFound(false);
 
-      // Handle non-UUID slugs (e.g. test-id, invalid text) cleanly without Postgres 22P02 error
       if (!isValidUUID(idOrToken)) {
         if (!isMounted) return;
         setNotFound(true);
@@ -92,7 +92,6 @@ export default function LoveExperiencePage() {
         return;
       }
 
-      // Query by either relationship UUID (id) or secure_token UUID
       const { data: expData, error } = await supabase
         .from('experiences')
         .select('*')
@@ -134,6 +133,11 @@ export default function LoveExperiencePage() {
       setLoveReasons((reasonsRes.data as LoveReason[]) || []);
       setGallery((galleryRes.data as GalleryItem[]) || []);
       setLoading(false);
+
+      // If URL has ?opened=true and user is authenticated, open immediately
+      if (user && typeof window !== 'undefined' && window.location.search.includes('opened=true')) {
+        setOpened(true);
+      }
     })();
 
     return () => {
@@ -142,6 +146,15 @@ export default function LoveExperiencePage() {
   }, [idOrToken, user, profile, authLoading]);
 
   const handleOpen = async () => {
+    if (!user) {
+      // Unauthenticated receiver: wait for envelope animation, then redirect
+      setOpened(true); // Triggers visual opening animation but we don't render the letter DOM yet due to router.push
+      setTimeout(() => {
+        router.push(`/signup?redirect=${encodeURIComponent(`/love/${idOrToken}?opened=true`)}&role=receiver`);
+      }, 800);
+      return;
+    }
+
     setOpened(true);
     if (exp && !exp.is_opened) {
       await supabase.from('experiences').update({
@@ -150,7 +163,6 @@ export default function LoveExperiencePage() {
         last_accessed_at: new Date().toISOString(),
       }).eq('id', exp.id);
 
-      // Notify sender
       if (exp.sender_id) {
         await supabase.from('notifications').insert({
           user_id: exp.sender_id,
@@ -162,7 +174,6 @@ export default function LoveExperiencePage() {
       }
     }
 
-    // Try auto-playing music
     if (audioRef.current && exp?.music_url) {
       audioRef.current.play().then(() => setPlaying(true)).catch(() => {});
     }
@@ -293,7 +304,7 @@ export default function LoveExperiencePage() {
           <div className="w-16 h-16 rounded-full bg-rose-100/80 text-rose-500 flex items-center justify-center mx-auto mb-5 shadow-inner">
             <Heart className="w-8 h-8 text-rose-400 fill-rose-200/50" />
           </div>
-          <h1 className="font-serif-display text-2xl sm:text-3xl font-bold text-rose-800 mb-3">
+          <h1 className="font-serif-title text-2xl sm:text-3xl font-bold text-rose-800 mb-3">
             Link Not Found or Expired
           </h1>
           <p className="text-sm text-rose-600/70 mb-6 leading-relaxed">
@@ -318,38 +329,7 @@ export default function LoveExperiencePage() {
     );
   }
 
-  // Not logged in: Cannot view the letter. Render locked screen while redirecting to signup/login.
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fff1f5] via-[#fdf2f8] to-[#fffaf5] px-4 py-12 relative overflow-hidden">
-        <FloatingAmbientHearts theme="pink-dream" />
-        <div className="relative z-10 max-w-md w-full glass rounded-3xl p-8 text-center shadow-2xl border border-rose-100">
-          <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mx-auto mb-4 shadow-inner">
-            <Lock className="w-8 h-8" />
-          </div>
-          <h2 className="font-serif-display text-2xl font-bold text-rose-800 mb-2">Private Love Letter Locked 💌</h2>
-          <p className="text-sm text-rose-600/80 mb-6 leading-relaxed">
-            This love letter is private. Please sign up or log in to unlock and read your letter. Redirecting you...
-          </p>
-          <div className="space-y-3">
-            <Link
-              href={`/signup?redirect=/love/${encodeURIComponent(idOrToken)}&role=receiver`}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-rose-400 to-lavender-400 text-white font-semibold text-sm shadow-md hover:shadow-lg transition hover:scale-[1.02]"
-            >
-              <span>Sign Up to Unlock</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href={`/login?redirect=/love/${encodeURIComponent(idOrToken)}&role=receiver`}
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/80 hover:bg-white text-rose-600 font-semibold text-xs border border-rose-200/60 shadow-xs transition"
-            >
-              <span>Already have an account? Log In</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   // If user is logged in with a different account that is not the sender and not the bound receiver
   if (user && exp?.receiver_id && user.id !== exp.receiver_id && user.id !== exp.sender_id) {
@@ -360,7 +340,7 @@ export default function LoveExperiencePage() {
           <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mx-auto mb-4 shadow-inner">
             <Lock className="w-8 h-8" />
           </div>
-          <h2 className="font-serif-display text-2xl font-bold text-rose-800 mb-2">Private Love Letter</h2>
+          <h2 className="font-serif-title text-2xl font-bold text-rose-800 mb-2">Private Love Letter</h2>
           <p className="text-sm text-rose-600/80 mb-6 leading-relaxed">
             This love letter was created specifically for <strong>{exp.receiver_name || 'someone else'}</strong> and is bound to their account. You are currently signed in as <strong>{profile?.name || user.email}</strong>.
           </p>
@@ -426,6 +406,8 @@ export default function LoveExperiencePage() {
       </div>
     );
   }
+
+  if (!user && opened) return null;
 
   return (
     <div className={`min-h-screen bg-gradient-to-b ${cfg.openedBg} ${cfg.textColor} relative`}>
@@ -509,6 +491,7 @@ export default function LoveExperiencePage() {
               senderName={exp.sender_name}
               receiverName={exp.receiver_name}
               content={exp.apology_message}
+              showSignature={true}
               theme={theme}
               isDark={isDark}
               accentColor={cfg.accent}
@@ -526,6 +509,7 @@ export default function LoveExperiencePage() {
               receiverName={exp?.receiver_name}
               content={exp?.love_letter || "Before this little fight, there was an entire story called us. You mean the world to me and I love you with all my heart."}
               secretNote={exp?.final_letter || "P.S. Whatever happens, you deserve the sweetest smile today. You will always be special to me. ❤️"}
+              showSignature={false}
               theme={theme}
               isDark={isDark}
               accentColor={cfg.accent}
@@ -543,7 +527,7 @@ export default function LoveExperiencePage() {
           >
             <div className="text-center mb-6">
               <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Remember these moments?</p>
-              <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+              <h3 className={`font-serif-title text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
                 Our Favorite Memories 📸
               </h3>
             </div>
@@ -649,7 +633,7 @@ export default function LoveExperiencePage() {
             >
               <div className="text-center mb-6">
                 <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Proof we belong together</p>
-                <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                <h3 className={`font-serif-title text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
                   Evidence That We Are Cute 🖼️
                 </h3>
               </div>
@@ -697,7 +681,7 @@ export default function LoveExperiencePage() {
             >
               <div className="text-center mb-6">
                 <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Inside jokes only we understand</p>
-                <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                <h3 className={`font-serif-title text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
                   Our Shared Brain Cells 😂❤️
                 </h3>
               </div>
@@ -710,7 +694,7 @@ export default function LoveExperiencePage() {
                     className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.jokeCardBg}`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-serif-display text-base font-bold">{f.title}</h4>
+                      <h4 className="font-serif-title text-base font-bold">{f.title}</h4>
                       <span className="text-xl">😜</span>
                     </div>
                     <p className="text-xs sm:text-sm leading-relaxed opacity-85">
@@ -734,7 +718,7 @@ export default function LoveExperiencePage() {
             >
               <div className="text-center mb-6">
                 <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Since we&apos;re here…</p>
-                <h3 className={`font-serif-display text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
+                <h3 className={`font-serif-title text-2xl sm:text-3xl font-bold tracking-tight ${cfg.titleColor}`}>
                   Reasons I Love You ❤️
                 </h3>
               </div>
@@ -747,7 +731,7 @@ export default function LoveExperiencePage() {
                     className={`rounded-2xl p-5 border shadow-md transition-all text-left ${cfg.jokeCardBg}`}
                   >
                     <div className="flex items-center justify-between mb-1.5">
-                      <h4 className="font-serif-display text-base font-bold">{r.title}</h4>
+                      <h4 className="font-serif-title text-base font-bold">{r.title}</h4>
                       <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                     </div>
                     <p className="text-xs sm:text-sm leading-relaxed opacity-85">
@@ -769,7 +753,7 @@ export default function LoveExperiencePage() {
             transition={{ duration: 0.6 }}
             className={`rounded-3xl p-6 sm:p-10 text-center border shadow-2xl transition-all relative ${cfg.inviteBg}`}
           >
-            <h3 className={`font-serif-display text-3xl sm:text-4xl font-bold mb-2 tracking-tight ${cfg.titleColor}`}>
+            <h3 className={`font-serif-title text-3xl sm:text-4xl font-bold mb-2 tracking-tight ${cfg.titleColor}`}>
               Can I take you out?
             </h3>
             <p className={`text-sm opacity-80 mb-6 font-script text-2xl ${cfg.subColor}`}>
@@ -829,7 +813,7 @@ export default function LoveExperiencePage() {
                     {dateConfirmed ? (
                       <div className="text-center py-4">
                         <div className="text-4xl mb-2">🎉🥂✨</div>
-                        <h4 className={`font-serif-display text-2xl font-bold mb-1 ${cfg.subColor}`}>
+                        <h4 className={`font-serif-title text-2xl font-bold mb-1 ${cfg.subColor}`}>
                           It&apos;s a Date!
                         </h4>
                         <p className={`text-sm mb-4 ${isDark ? 'text-purple-200' : 'text-slate-600'}`}>
@@ -1029,7 +1013,7 @@ export default function LoveExperiencePage() {
                   }`}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">🥺❤️</span>
-                      <h4 className="font-serif-display text-xl font-bold text-amber-500">
+                      <h4 className="font-serif-title text-xl font-bold text-amber-500">
                         That&apos;s completely okay
                       </h4>
                     </div>
@@ -1091,7 +1075,7 @@ export default function LoveExperiencePage() {
                   }`}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl">🤍</span>
-                      <h4 className="font-serif-display text-xl font-bold text-slate-400">
+                      <h4 className="font-serif-title text-xl font-bold text-slate-400">
                         I understand completely
                       </h4>
                     </div>
