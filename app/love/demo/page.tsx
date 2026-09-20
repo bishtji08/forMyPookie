@@ -2,32 +2,23 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Star, Palette, X } from 'lucide-react';
+import { Heart, Star, Sun, Moon, X } from 'lucide-react';
 import type { ExperienceTheme } from '@/lib/types';
-import { THEME_CONFIG } from '@/lib/types';
+import { THEME_CONFIG, normalizeTheme } from '@/lib/types';
 import { ParchmentLetter } from '@/components/experience/parchment-letter';
 import { InteractiveEnvelope } from '@/components/experience/interactive-envelope';
 import { FloatingAmbientHearts } from '@/components/experience/floating-ambient-hearts';
-import { Heart3D } from '@/components/experience/heart-3d';
 
 export default function DemoExperiencePage() {
   const [opened, setOpened] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState<ExperienceTheme>('pink-dream');
+  const [selectedTheme, setSelectedTheme] = useState<ExperienceTheme>('light');
   const [answer, setAnswer] = useState<'yes' | 'maybe' | 'no' | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [customDateInput, setCustomDateInput] = useState('');
   const [dateConfirmed, setDateConfirmed] = useState(false);
   const [lightboxItem, setLightboxItem] = useState<{ url: string; caption?: string } | null>(null);
 
-  const cfg = THEME_CONFIG[selectedTheme] || THEME_CONFIG['pink-dream'];
-
-  const themeList: { key: ExperienceTheme; label: string; icon: string; border: string; bg: string; text: string }[] = [
-    { key: 'pink-dream', label: 'Pink Dream', icon: '🌸', border: 'border-rose-400', bg: 'bg-rose-500/20', text: 'text-rose-200' },
-    { key: 'lavender-night', label: 'Lavender Night', icon: '🌙', border: 'border-purple-400', bg: 'bg-purple-500/20', text: 'text-purple-200' },
-    { key: 'sunset-love', label: 'Sunset Love', icon: '🌅', border: 'border-orange-400', bg: 'bg-orange-500/20', text: 'text-orange-200' },
-    { key: 'minimal-cream', label: 'Minimal Cream', icon: '✨', border: 'border-amber-400', bg: 'bg-amber-500/20', text: 'text-amber-200' },
-    { key: 'starry-romance', label: 'Starry Romance', icon: '🌌', border: 'border-blue-400', bg: 'bg-blue-500/20', text: 'text-blue-200' },
-  ];
+  const cfg = THEME_CONFIG[normalizeTheme(selectedTheme)] || THEME_CONFIG.light;
 
   const dateIdeas = [
     { label: 'Coffee & Talk', emoji: '☕' },
@@ -55,9 +46,9 @@ export default function DemoExperiencePage() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              <span>🎨 Live Complete Experience Preview</span>
+              <span>🎨 Live Relationship Experience Showcase</span>
               <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                All Features
+                Light & Dark Modes
               </span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -88,32 +79,42 @@ export default function DemoExperiencePage() {
           </div>
         </div>
 
-        {/* Theme Selector Pills */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-4 pt-3 border-t border-slate-700/60">
-          {themeList.map((t) => {
-            const isActive = selectedTheme === t.key;
-            return (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setSelectedTheme(t.key)}
-                className={`theme-btn flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold border transition ${
-                  isActive
-                    ? `${t.border} ${t.bg} ${t.text}`
-                    : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
-                }`}
-              >
-                <span>{t.icon}</span> {t.label}
-              </button>
-            );
-          })}
+        {/* Theme Selector: Light vs Dark only */}
+        <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-700/60">
+          <button
+            type="button"
+            onClick={() => setSelectedTheme('light')}
+            className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold border transition ${
+              selectedTheme === 'light'
+                ? 'border-amber-400 bg-amber-500/20 text-amber-200 shadow-md ring-1 ring-amber-400/40'
+                : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
+            }`}
+          >
+            <Sun className="w-4 h-4 text-amber-400" />
+            <span className="font-bold">☀️ Light Mode</span>
+            <span className="text-[10px] opacity-75 font-normal hidden sm:inline">(Warm romantic stationery)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedTheme('dark')}
+            className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold border transition ${
+              selectedTheme === 'dark'
+                ? 'border-rose-400 bg-rose-500/20 text-rose-200 shadow-md ring-1 ring-rose-400/40'
+                : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
+            }`}
+          >
+            <Moon className="w-4 h-4 text-rose-300" />
+            <span className="font-bold">🌙 Dark Mode</span>
+            <span className="text-[10px] opacity-75 font-normal hidden sm:inline">(Cinematic night letter)</span>
+          </button>
         </div>
       </div>
 
       {/* Main Showcase Container */}
       <div
         id="previewCanvas"
-        className={`max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500 relative min-h-[600px] flex flex-col justify-center ${cfg.canvasBg}`}
+        className={`font-playfair max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl border transition-all duration-500 relative min-h-[600px] flex flex-col justify-center ${cfg.canvasBg}`}
       >
         {/* Ambient Floating Hearts Background Layer */}
         <FloatingAmbientHearts theme={selectedTheme} />
@@ -122,8 +123,8 @@ export default function DemoExperiencePage() {
         {!opened ? (
           <InteractiveEnvelope
             receiverName="My Pookie"
-            senderName="Anuj"
-            subtitle="a little something i made with my whole heart"
+            senderName="SomeOne Special"
+            subtitle="a little something I made with my whole heart"
             theme={selectedTheme}
             onOpen={() => setOpened(true)}
           />
@@ -135,10 +136,9 @@ export default function DemoExperiencePage() {
               <ParchmentLetter
                 badge="From the bottom of my heart"
                 title="Things I Should Have Said Properly…"
-                senderName="Anuj"
-                receiverName="Cuitee"
+                senderName="SomeOne Special"
+                receiverName="My Pookie"
                 content="I'm sorry. Not the casual 'sorry yaar' kind. The real one.&#10;&#10;I know I messed up. I know I said the wrong thing at the wrong time. And I know that 'I was tired' or 'I was stressed' doesn't excuse making you feel hurt.&#10;&#10;You didn't deserve that. You deserved patience, gentleness, and better from me. And I genuinely promise to do better."
-                showSignature={true}
                 theme={selectedTheme}
               />
             </div>
@@ -148,11 +148,10 @@ export default function DemoExperiencePage() {
               <ParchmentLetter
                 badge="Beyond any fight, there is us"
                 title="What You Truly Mean To Me ❤️"
-                senderName="Anuj"
-                receiverName="Cuitee"
+                senderName="SomeOne Special"
+                receiverName="My Pookie"
                 content="Before this little fight, there was an entire story called us. The late-night calls where we talked about nothing for hours, laughing until our stomachs hurt, and all the quiet moments where I knew you were my favorite person in the entire world.&#10;&#10;I love you. Not the social media caption kind. The real, quiet, show-up-for-you kind of love."
                 secretNote="P.S. Whatever happens, you deserve the sweetest smile today. Take all the time you need. You will always be special to me. ❤️"
-                showSignature={false}
                 theme={selectedTheme}
               />
             </div>
@@ -161,53 +160,67 @@ export default function DemoExperiencePage() {
             <div>
               <div className="text-center mb-6">
                 <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Remember these moments?</p>
-                <h3 className="font-serif-title text-2xl sm:text-3xl font-bold">Our Favorite Memories 📸</h3>
+                <h3 className={`font-serif-title text-2xl sm:text-3xl font-bold ${cfg.titleColor}`}>
+                  Our Favorite Memories 📸
+                </h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* Polaroid 1 */}
-                <div className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-1 hover:rotate-0 transition-all text-left relative">
+                <div
+                  className={`bg-white text-slate-800 rounded-2xl p-4 shadow-xl border-2 transition-all text-left relative transform -rotate-1 hover:rotate-0 ${
+                    cfg.isDark ? 'border-slate-300/90 shadow-2xl shadow-black/80' : 'border-rose-200 shadow-xl shadow-rose-200/30'
+                  }`}
+                >
                   <div
-                    className={`polaroid-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 rounded-xs rotate-2 pointer-events-none ${cfg.tapeColor}`}
+                    className={`polaroid-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 rounded-xs rotate-2 pointer-events-none shadow-xs ${cfg.tapeColor}`}
                   />
                   <div
                     className={`polaroid-inner h-32 sm:h-36 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner ${cfg.polaroidInnerBg}`}
                   >
                     ☕
                   </div>
-                  <p className="font-bold text-sm text-rose-950 mb-0.5">The First Date</p>
-                  <p className={`font-script text-base ${cfg.subColor} leading-snug`}>
+                  <p className="font-bold text-sm text-slate-900 mb-0.5">The First Date</p>
+                  <p className="font-script text-base text-[#E11D48] leading-snug font-semibold">
                     Spilled coffee & still got your number
                   </p>
                 </div>
 
                 {/* Polaroid 2 */}
-                <div className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform rotate-2 hover:rotate-0 transition-all text-left relative">
+                <div
+                  className={`bg-white text-slate-800 rounded-2xl p-4 shadow-xl border-2 transition-all text-left relative transform rotate-2 hover:rotate-0 ${
+                    cfg.isDark ? 'border-slate-300/90 shadow-2xl shadow-black/80' : 'border-rose-200 shadow-xl shadow-rose-200/30'
+                  }`}
+                >
                   <div
-                    className={`polaroid-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 rounded-xs -rotate-2 pointer-events-none ${cfg.tapeColor}`}
+                    className={`polaroid-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 rounded-xs -rotate-2 pointer-events-none shadow-xs ${cfg.tapeColor}`}
                   />
                   <div
                     className={`polaroid-inner h-32 sm:h-36 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner ${cfg.polaroidInnerBg}`}
                   >
                     ⛰️
                   </div>
-                  <p className="font-bold text-sm text-rose-950 mb-0.5">Mountain Trip</p>
-                  <p className={`font-script text-base ${cfg.subColor} leading-snug`}>
+                  <p className="font-bold text-sm text-slate-900 mb-0.5">Mountain Trip</p>
+                  <p className="font-script text-base text-[#E11D48] leading-snug font-semibold">
                     You made me take 400 photos & I loved it
                   </p>
                 </div>
 
                 {/* Polaroid 3 */}
-                <div className="bg-white text-slate-800 rounded-2xl p-4 shadow-xl border border-rose-100/70 transform -rotate-2 hover:rotate-0 transition-all text-left relative">
+                <div
+                  className={`bg-white text-slate-800 rounded-2xl p-4 shadow-xl border-2 transition-all text-left relative transform -rotate-2 hover:rotate-0 ${
+                    cfg.isDark ? 'border-slate-300/90 shadow-2xl shadow-black/80' : 'border-rose-200 shadow-xl shadow-rose-200/30'
+                  }`}
+                >
                   <div
-                    className={`polaroid-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 rounded-xs rotate-1 pointer-events-none ${cfg.tapeColor}`}
+                    className={`polaroid-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-14 h-5 rounded-xs rotate-1 pointer-events-none shadow-xs ${cfg.tapeColor}`}
                   />
                   <div
                     className={`polaroid-inner h-32 sm:h-36 rounded-xl flex items-center justify-center text-4xl mb-3 shadow-inner ${cfg.polaroidInnerBg}`}
                   >
                     🍕
                   </div>
-                  <p className="font-bold text-sm text-rose-950 mb-0.5">Pizza Disaster</p>
-                  <p className={`font-script text-base ${cfg.subColor} leading-snug`}>
+                  <p className="font-bold text-sm text-slate-900 mb-0.5">Pizza Disaster</p>
+                  <p className="font-script text-base text-[#E11D48] leading-snug font-semibold">
                     Burned pasta, best pizza ever
                   </p>
                 </div>
@@ -217,8 +230,10 @@ export default function DemoExperiencePage() {
             {/* SECTION 4: Evidence That We Are Cute 🖼️ (Photo Gallery) */}
             <div>
               <div className="text-center mb-6">
-                <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Proof we belong together</p>
-                <h3 className="font-serif-title text-2xl sm:text-3xl font-bold">Evidence That We Are Cute 🖼️</h3>
+                <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Evidence That You're</p>
+                <h3 className={`font-serif-title text-2xl sm:text-3xl font-bold ${cfg.titleColor}`}>
+                  My Favorite Person to Look At 🖼️
+                </h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
@@ -260,7 +275,9 @@ export default function DemoExperiencePage() {
             <div>
               <div className="text-center mb-6">
                 <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Inside jokes only we understand</p>
-                <h3 className="font-serif-title text-2xl sm:text-3xl font-bold">Our Shared Brain Cells 😂❤️</h3>
+                <h3 className={`font-serif-title text-2xl sm:text-3xl font-bold ${cfg.titleColor}`}>
+                  Our Shared Brain Cells 😂❤️
+                </h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
@@ -298,7 +315,9 @@ export default function DemoExperiencePage() {
             <div>
               <div className="text-center mb-6">
                 <p className={`font-script text-2xl ${cfg.subColor} mb-1`}>Since we&apos;re here…</p>
-                <h3 className="font-serif-title text-2xl sm:text-3xl font-bold">Reasons I Love You ❤️</h3>
+                <h3 className={`font-serif-title text-2xl sm:text-3xl font-bold ${cfg.titleColor}`}>
+                  Reasons I Love You ❤️
+                </h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
@@ -335,30 +354,46 @@ export default function DemoExperiencePage() {
 
             {/* SECTION 7: The Invitation & Simplified 6-Card Date Picker */}
             <div id="inviteCard" className={`rounded-3xl p-6 sm:p-10 text-center border shadow-2xl ${cfg.inviteBg}`}>
-              <h3 className="font-serif-title text-3xl sm:text-4xl font-bold mb-2">Can I take you out?</h3>
+              <h3 className={`font-serif-title text-3xl sm:text-4xl font-bold mb-2 ${cfg.titleColor}`}>
+                Can I take you out?
+              </h3>
               <p className={`text-sm opacity-80 mb-6 font-script text-2xl ${cfg.subColor}`}>
                 Coffee? Dinner? A walk? You choose.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto mb-6">
+              <div className="flex flex-col sm:flex-row gap-3.5 justify-center max-w-md mx-auto mb-6">
                 <button
                   type="button"
                   onClick={() => setAnswer('yes')}
-                  className={`flex-1 py-3 px-4 rounded-xl text-white font-bold text-base transition transform hover:scale-[1.02] cursor-pointer ${cfg.buttonPrimary}`}
+                  className={`flex-1 py-3.5 px-5 rounded-2xl font-extrabold text-base text-white shadow-xl transition-all transform hover:scale-105 cursor-pointer ${
+                    answer === 'yes'
+                      ? `${cfg.buttonPrimary} ring-4 ${cfg.isDark ? 'ring-blue-400/50' : 'ring-rose-400/50'} scale-105`
+                      : cfg.buttonPrimary
+                  }`}
                 >
                   ❤️ YES
                 </button>
                 <button
                   type="button"
                   onClick={() => setAnswer('maybe')}
-                  className="flex-1 py-3 px-4 rounded-xl bg-amber-500/90 hover:bg-amber-500 text-white font-bold text-base shadow-lg transition transform hover:scale-[1.02] cursor-pointer"
+                  className={`flex-1 py-3.5 px-5 rounded-2xl font-extrabold text-base shadow-lg transition-all transform hover:scale-105 cursor-pointer border-2 ${
+                    answer === 'maybe'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white border-amber-300 ring-4 ring-amber-400/50 scale-105'
+                      : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white border-amber-300/80'
+                  }`}
                 >
                   🥺 MAYBE
                 </button>
                 <button
                   type="button"
                   onClick={() => setAnswer('no')}
-                  className="flex-1 py-3 px-4 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-200 font-bold text-base border border-slate-600 transition transform hover:scale-[1.02] cursor-pointer"
+                  className={`flex-1 py-3.5 px-5 rounded-2xl font-extrabold text-base border-2 shadow-md transition-all transform hover:scale-105 cursor-pointer ${
+                    answer === 'no'
+                      ? `${cfg.isDark ? 'bg-slate-700 border-slate-400 ring-4 ring-slate-400/50' : 'bg-slate-200 border-slate-400 ring-4 ring-slate-400/50'} scale-105`
+                      : cfg.isDark
+                      ? 'bg-[#131F37] hover:bg-[#1C2C4E] text-slate-200 border-slate-600 hover:border-slate-500'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                  }`}
                 >
                   🤍 NO
                 </button>
@@ -366,7 +401,7 @@ export default function DemoExperiencePage() {
 
               {/* SIMPLIFIED 6 DATE OPTIONS (Appears on YES) */}
               {answer === 'yes' && (
-                <div className={`mt-4 p-5 sm:p-6 rounded-2xl border text-left ${cfg.dateBoxBg}`}>
+                <div className={`mt-4 p-5 sm:p-6 rounded-2xl border-2 text-left ${cfg.dateBoxBg}`}>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-bold uppercase tracking-wider opacity-80 flex items-center gap-1.5">
                       <span>🥂</span>
@@ -386,7 +421,7 @@ export default function DemoExperiencePage() {
                           key={idx}
                           type="button"
                           onClick={() => handleSelectDate(`${idea.emoji} ${idea.label}`)}
-                          className={`date-card p-3 rounded-2xl text-xs font-semibold text-center transition-all flex flex-col items-center justify-center gap-1.5 border cursor-pointer ${
+                          className={`date-card p-3 rounded-2xl text-xs font-bold text-center transition-all flex flex-col items-center justify-center gap-1.5 border-2 cursor-pointer ${
                             isSelected ? cfg.dateCardActive : cfg.dateCardBg
                           }`}
                         >
@@ -407,12 +442,12 @@ export default function DemoExperiencePage() {
                         value={customDateInput}
                         onChange={(e) => setCustomDateInput(e.target.value)}
                         placeholder="e.g. Stargazing on the roof 🔭, Baking together 🍪"
-                        className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs outline-none border focus:ring-2 ${cfg.inputBg}`}
+                        className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs outline-none border-2 focus:ring-2 ${cfg.inputBg}`}
                       />
                       <button
                         type="button"
                         onClick={handlePickCustom}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition shadow-xs cursor-pointer ${cfg.buttonPrimary}`}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-extrabold text-white transition shadow-md cursor-pointer ${cfg.buttonPrimary}`}
                       >
                         Pick
                       </button>
@@ -449,7 +484,7 @@ export default function DemoExperiencePage() {
                         }
                         setDateConfirmed(true);
                       }}
-                      className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs shadow transition text-center cursor-pointer ${cfg.buttonPrimary}`}
+                      className={`w-full py-3 px-4 rounded-xl font-extrabold text-xs text-white shadow-lg transition text-center cursor-pointer ${cfg.buttonPrimary}`}
                     >
                       Confirm Date Request ❤️
                     </button>

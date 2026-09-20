@@ -9,9 +9,8 @@ import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import type { ExperienceTheme } from '@/lib/types';
 import { THEME_CONFIG } from '@/lib/types';
+import { SenderThemeSelector } from '@/components/experience/sender-theme-selector';
 import { PRESET_DATE_IDEAS, DATE_CATEGORIES, DEFAULT_DATE_KEYS, formatCustomDateIdea } from '@/lib/date-ideas';
-
-const themes = Object.entries(THEME_CONFIG) as [ExperienceTheme, typeof THEME_CONFIG[ExperienceTheme]][];
 
 export default function CreateExperiencePage() {
   const router = useRouter();
@@ -28,7 +27,7 @@ export default function CreateExperiencePage() {
     apology_message: '',
     love_letter: '',
     final_letter: '',
-    theme: 'pink-dream' as ExperienceTheme,
+    theme: 'light' as ExperienceTheme,
     music_url: '',
     date_options: ['coffee', 'dinner', 'movie', 'walk', 'drive', 'surprise'],
   });
@@ -165,7 +164,7 @@ export default function CreateExperiencePage() {
           {step === 1 && (
             <div className="space-y-4">
               <h2 className="font-display text-xl font-semibold text-rose-700">Your Apology</h2>
-              <p className="text-sm text-rose-400/60">Write what you should have said properly. Be sincere, not dramatic.</p>
+              <p className=" font-body text-sm text-rose-400/60">Write what you should have said properly. Be sincere, not dramatic.</p>
               <textarea
                 value={form.apology_message}
                 onChange={(e) => update('apology_message', e.target.value)}
@@ -180,7 +179,7 @@ export default function CreateExperiencePage() {
           {step === 2 && (
             <div className="space-y-4">
               <h2 className="font-display text-xl font-semibold text-rose-700">Love Letter</h2>
-              <p className="text-sm text-rose-400/60">The main letter she'll read. Tell her how you feel.</p>
+              <p className="font-body text-sm text-rose-400/60">The main letter she'll read. Tell her how you feel.</p>
               <textarea
                 value={form.love_letter}
                 onChange={(e) => update('love_letter', e.target.value)}
@@ -195,7 +194,7 @@ export default function CreateExperiencePage() {
           {step === 3 && (
             <div className="space-y-4">
               <h2 className="font-display text-xl font-semibold text-rose-700">Final Love Letter</h2>
-              <p className="text-sm text-rose-400/60">One last thing... The letter before you ask her out.</p>
+              <p className="font-body text-sm text-rose-400/60">One last thing... The letter before you ask her out.</p>
               <textarea
                 value={form.final_letter}
                 onChange={(e) => update('final_letter', e.target.value)}
@@ -216,49 +215,15 @@ export default function CreateExperiencePage() {
                     Active: {THEME_CONFIG[form.theme].name}
                   </span>
                 </div>
-                <p className="text-xs text-rose-400/80 mb-3">
-                  This theme will be automatically applied to the envelope and letter when your receiver opens the link.
+                <p className="text-xs text-rose-400/80 mb-4">
+                  Select Light or Dark mode. This design will be automatically applied when your receiver opens the letter.
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {themes.map(([key, config]) => {
-                    const isSelected = form.theme === key;
-                    const isDark = key === 'lavender-night' || key === 'starry-romance';
-                    return (
-                      <button
-                        type="button"
-                        key={key}
-                        onClick={() => update('theme', key)}
-                        className={`rounded-2xl p-3.5 text-left border-2 transition-all relative ${
-                          isSelected
-                            ? 'border-rose-500 bg-rose-50/80 shadow-md ring-2 ring-rose-300/40 scale-[1.02]'
-                            : 'border-rose-100 hover:border-rose-200 bg-white/70'
-                        }`}
-                        style={{ fontFamily: config.typography.metadata || 'inherit' }}
-                      >
-                        <div className={`h-18 rounded-xl bg-gradient-to-br ${config.gradient} mb-2.5 shadow-xs p-2.5`}>
-                          <div className="h-full w-full rounded-lg border border-white/20 bg-black/5 backdrop-blur-[2px] p-2 flex flex-col justify-between">
-                            <div className="flex items-center justify-between">
-                              <span className="text-lg">{config.decorativeIcon}</span>
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-sm">{isDark ? 'Dark' : 'Light'}</span>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/80">Letter</p>
-                              <div className="h-1.5 w-10 rounded-full bg-white/80" />
-                              <div className="h-1.5 w-8 rounded-full bg-white/40" />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <div>
-                            <p className="text-[11px] font-bold text-rose-900 truncate">{config.name}</p>
-                            <span className="text-[9px] block mt-1 text-rose-500/80">{config.description}</span>
-                          </div>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-rose-600 stroke-[3] shrink-0" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                <SenderThemeSelector
+                  value={form.theme}
+                  onChange={(t) => update('theme', t)}
+                  receiverName={form.receiver_nickname || form.receiver_name}
+                  senderName={form.sender_name}
+                />
               </div>
 
               <div className="space-y-4">

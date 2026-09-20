@@ -212,7 +212,7 @@ CREATE TABLE IF NOT EXISTS public.experiences (
   apology_message text NOT NULL DEFAULT '',
   love_letter text NOT NULL DEFAULT '',
   final_letter text NOT NULL DEFAULT '',
-  theme text NOT NULL DEFAULT 'pink-dream' CHECK (theme IN ('pink-dream', 'lavender-night', 'sunset-love', 'minimal-cream', 'starry-romance')),
+  theme text NOT NULL DEFAULT 'light' CHECK (theme IN ('light', 'dark')),
   music_url text,
   status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'inactive', 'expired')),
   is_opened boolean NOT NULL DEFAULT false,

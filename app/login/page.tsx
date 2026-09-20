@@ -284,6 +284,7 @@ export default function LoginPage() {
           {/* Google Sign In */}
           <GoogleButton
             redirectUrl={redirectUrl}
+            role={redirectUrl?.startsWith('/love/') ? 'receiver' : undefined}
             text="Continue with Google"
           />
 
@@ -292,7 +293,11 @@ export default function LoginPage() {
               Forgot password?
             </Link>
             <Link
-              href={redirectUrl ? `/signup?redirect=${encodeURIComponent(redirectUrl)}` : '/signup'}
+              href={
+                redirectUrl
+                  ? `/signup?redirect=${encodeURIComponent(redirectUrl)}${redirectUrl.startsWith('/love/') ? '&role=receiver' : ''}`
+                  : '/signup'
+              }
               className="text-rose-500 hover:text-rose-600 font-medium"
             >
               Create account

@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronDown, ChevronUp, Stamp } from 'lucide-react';
 import { playPop } from '@/lib/audio-effects';
-
 import type { ExperienceTheme } from '@/lib/types';
-import { THEME_CONFIG } from '@/lib/types';
+import { THEME_CONFIG, normalizeTheme } from '@/lib/types';
 
 interface ParchmentLetterProps {
   title: string;
@@ -17,7 +15,7 @@ interface ParchmentLetterProps {
   dateStamp?: string;
   secretNote?: string;
   showSignature?: boolean;
-  theme?: ExperienceTheme;
+  theme?: ExperienceTheme | string;
   isDark?: boolean;
   accentColor?: string;
 }
@@ -31,13 +29,14 @@ export function ParchmentLetter({
   dateStamp,
   secretNote,
   showSignature = true,
-  theme = 'pink-dream',
+  theme = 'light',
   isDark = false,
-  accentColor = '#e11d48',
+  accentColor,
 }: ParchmentLetterProps) {
   const [secretOpen, setSecretOpen] = useState(false);
 
-  const cfg = THEME_CONFIG[theme] || THEME_CONFIG['pink-dream'];
+  const activeTheme = normalizeTheme(theme);
+  const cfg = THEME_CONFIG[activeTheme] || THEME_CONFIG.light;
   const actualIsDark = isDark || cfg.isDark;
 
   const toggleSecret = () => {
@@ -53,7 +52,7 @@ export function ParchmentLetter({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className={`rounded-3xl p-6 sm:p-10 shadow-2xl border transition-all duration-300 relative ${cfg.cardBg}`}
+        className={`rounded-3xl p-6 sm:p-10 shadow-2xl border transition-all duration-300 relative ${cfg.letter.background}`}
       >
         {/* Top Wax Seal Ribbon Badge */}
         {badge && (
@@ -66,22 +65,12 @@ export function ParchmentLetter({
         {/* Header inside parchment */}
         <div className="text-center mt-3 mb-6">
           <h2
-            className="text-2xl sm:text-3xl font-bold tracking-tight mb-1"
-            style={{
-              fontFamily: cfg.typography.display,
-              color: actualIsDark ? '#f5edff' : undefined,
-            }}
+            className={`font-serif-title text-2xl sm:text-3xl font-bold tracking-tight mb-1 ${cfg.letter.heading}`}
           >
             {title}
           </h2>
           {receiverName && (
-            <p
-              className="text-2xl"
-              style={{
-                fontFamily: cfg.typography.script,
-                color: actualIsDark ? '#c084fc' : undefined,
-              }}
-            >
+            <p className={`font-script text-2xl ${cfg.subColor}`}>
               To my {receiverName} ❤️
             </p>
           )}
@@ -90,11 +79,7 @@ export function ParchmentLetter({
         {/* Letter Body Content with High-Contrast Typography */}
         <div className="relative">
           <div
-            className="text-lg sm:text-xl md:text-2xl leading-relaxed space-y-4"
-            style={{
-              fontFamily: cfg.typography.body,
-              color: actualIsDark ? '#f5edff' : undefined,
-            }}
+            className={`font-serif-body text-lg sm:text-xl md:text-2xl leading-relaxed space-y-4 ${cfg.letter.text}`}
           >
             {content ? (
               content.split('\n\n').map((para, pIdx) => (
@@ -109,12 +94,10 @@ export function ParchmentLetter({
         {/* Sign-off */}
         {showSignature && senderName && (
           <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/10 text-center">
-            <p
-              className="leading-none tracking-tight"
+            <p      
+              className={`font-alex-brush italics leading-none tracking-tight ${cfg.subColor}`}
               style={{
-                fontFamily: cfg.typography.script,
-                color: actualIsDark ? '#f8f5ff' : cfg.subColor,
-                fontSize: 'clamp(2.1rem, 4vw, 4rem)',
+                fontSize: 'clamp(0.75rem, 1vw, 1rem)',
               }}
             >
               With all my love, {senderName}
@@ -135,13 +118,10 @@ export function ParchmentLetter({
             <button
               type="button"
               onClick={toggleSecret}
-              className="w-full py-3 px-4 rounded-xl border border-rose-400/30 bg-rose-500/10 hover:bg-rose-500/20 text-left flex items-center justify-between text-sm font-semibold transition cursor-pointer"
-              style={{
-                fontFamily: cfg.typography.script,
-              }}
+              className={`w-full py-3 px-4 rounded-xl border ${cfg.secretToggleBg || (actualIsDark ? 'bg-[#231422] border-rose-500/40 text-[#7DD3FC]' : 'bg-[#FFF1F5] border-[#FDA4AF] text-[#F43F5E]')} text-left flex items-center justify-between text-sm font-semibold transition cursor-pointer`}
             >
-              <span className="text-xl" style={{ color: actualIsDark ? '#f5edff' : undefined }}>
-                {secretOpen ? 'Fold Secret Note 💌' : '✨ P.S. Tap to unfold a secret note…'}
+              <span className={`font-playfair text-base sm:text-lg leading-relaxed ${cfg.subColor}`}>
+                {secretOpen ? 'Fold Secret Note 💌' : '✨ Tap to unfold a secret note…'}
               </span>
               <span className="text-xs">{secretOpen ? '▲' : '▼'}</span>
             </button>
@@ -156,7 +136,7 @@ export function ParchmentLetter({
                   className="overflow-hidden"
                 >
                   <div className={`mt-2 p-4 rounded-xl border ${cfg.secretBoxBg}`}>
-                    <p className={`font-script text-xl leading-relaxed`}>
+                    <p className="font-dancing text-sm sm:text-base leading-relaxed">
                       {secretNote}
                     </p>
                   </div>
