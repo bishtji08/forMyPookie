@@ -21,6 +21,14 @@ export const metadata: Metadata = {
   title: 'For My Pookie ❤️ — A Love Letter Just For You',
   description: 'A private romantic apology and love-story platform. Make her smile first.',
   robots: { index: false, follow: false },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/icon.svg',
+  },
   openGraph: {
     title: 'For My Pookie ❤️',
     description: 'A tiny interactive love letter from me to my pookie.',

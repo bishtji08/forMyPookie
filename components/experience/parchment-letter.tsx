@@ -11,6 +11,8 @@ interface ParchmentLetterProps {
   badge?: string;
   senderName?: string;
   receiverName?: string;
+  receiverNickname?: string;
+  receiverNickName?: string;
   content: string;
   dateStamp?: string;
   secretNote?: string;
@@ -25,6 +27,8 @@ export function ParchmentLetter({
   badge = 'To the love of my life',
   senderName,
   receiverName,
+  receiverNickname,
+  receiverNickName,
   content,
   dateStamp,
   secretNote,
@@ -35,6 +39,7 @@ export function ParchmentLetter({
 }: ParchmentLetterProps) {
   const [secretOpen, setSecretOpen] = useState(false);
 
+  const nickname = (receiverNickname || receiverNickName || '').trim();
   const activeTheme = normalizeTheme(theme);
   const cfg = THEME_CONFIG[activeTheme] || THEME_CONFIG.light;
   const actualIsDark = isDark || cfg.isDark;
@@ -94,7 +99,7 @@ export function ParchmentLetter({
         {/* Sign-off */}
         {showSignature && senderName && (
           <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/10 text-center">
-            <p      
+            <p
               className={`font-alex-brush italics leading-none tracking-tight ${cfg.subColor}`}
               style={{
                 fontSize: 'clamp(0.75rem, 1vw, 1rem)',
@@ -121,7 +126,9 @@ export function ParchmentLetter({
               className={`w-full py-3 px-4 rounded-xl border ${cfg.secretToggleBg || (actualIsDark ? 'bg-[#231422] border-rose-500/40 text-[#7DD3FC]' : 'bg-[#FFF1F5] border-[#FDA4AF] text-[#F43F5E]')} text-left flex items-center justify-between text-sm font-semibold transition cursor-pointer`}
             >
               <span className={`font-playfair text-base sm:text-lg leading-relaxed ${cfg.subColor}`}>
-                {secretOpen ? 'Fold Secret Note 💌' : '✨ Tap to unfold a secret note…'}
+                {secretOpen
+                  ? `${nickname ? `${nickname} - ` : ''}Fold Secret Note 💌`
+                  : `${nickname ? `${nickname} - ` : ''}✨ Tap to unfold a secret note…`}
               </span>
               <span className="text-xs">{secretOpen ? '▲' : '▼'}</span>
             </button>

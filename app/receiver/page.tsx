@@ -122,7 +122,7 @@ export default function ReceiverOverview() {
             <div className="flex items-center gap-2">
               <CalendarHeart className="w-5 h-5 text-rose-500" />
               <h2 className="font-display text-lg sm:text-xl font-bold text-rose-700">
-                Plan Our Next Date with {primaryExp.sender_name || 'Your Partner'}
+                Wanna hang out sometime? {primaryExp.sender_name || 'Your Partner'}
               </h2>
             </div>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-600 font-medium">
@@ -130,7 +130,7 @@ export default function ReceiverOverview() {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-rose-400/70 mb-4">
-            Suggest a date idea you&apos;d love to go on together. He&apos;ll be notified immediately!
+            Suggest a places&apos;We could go together. He&apos;ll be notified immediately!
           </p>
 
           {/* Quick suggestion input */}
@@ -138,7 +138,7 @@ export default function ReceiverOverview() {
             <input
               value={suggestInput}
               onChange={(e) => setSuggestInput(e.target.value)}
-              placeholder="e.g. Picnic at sunset 🧺, Late night bowling 🎳, Making sushi 🍣"
+              placeholder="e.g. Temple visit ⛩️, Mountains view ⛰️, Timespend with nature 🏞️"
               className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-rose-200/80 focus:border-rose-400 focus:ring-2 focus:ring-rose-300/30 outline-none text-rose-700 text-sm"
             />
             <button
@@ -151,7 +151,7 @@ export default function ReceiverOverview() {
               ) : (
                 <>
                   <Plus className="w-4 h-4" />
-                  <span>Suggest Date</span>
+                  <span>Suggest a place where we can go</span>
                 </>
               )}
             </button>
@@ -161,7 +161,7 @@ export default function ReceiverOverview() {
           {primaryExp.date_options && primaryExp.date_options.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-rose-500 uppercase tracking-wider mb-2">
-                Offered Date Options & Ideas:
+                Offered places to go:
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {primaryExp.date_options.map((opt) => {
@@ -186,7 +186,7 @@ export default function ReceiverOverview() {
         <div className="glass rounded-2xl p-12 text-center">
           <Sparkles className="w-12 h-12 text-rose-300 mx-auto mb-4" />
           <p className="text-rose-400/60 mb-2">No experiences yet.</p>
-          <p className="text-sm text-rose-400/40">When someone shares a love letter with you, it will appear here.</p>
+          <p className="text-sm text-rose-400/40">When someone shares a letter with you, it will appear here.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -216,11 +216,10 @@ export default function ReceiverOverview() {
                         </span>
                       )}
                       {exp.response_status && (
-                        <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${
-                          exp.response_status === 'yes' ? 'bg-green-100 text-green-600' :
-                          exp.response_status === 'maybe' ? 'bg-amber-100 text-amber-600' :
-                          'bg-gray-100 text-gray-500'
-                        }`}>
+                        <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${exp.response_status === 'yes' ? 'bg-green-100 text-green-600' :
+                            exp.response_status === 'maybe' ? 'bg-amber-100 text-amber-600' :
+                              'bg-gray-100 text-gray-500'
+                          }`}>
                           <Heart className="w-3 h-3" /> {exp.response_status.toUpperCase()}
                         </span>
                       )}

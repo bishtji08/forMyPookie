@@ -35,27 +35,27 @@ export function SenderThemeSelector({
     envelopeBg: string;
     accentColor: string;
   }[] = [
-    {
-      key: 'light',
-      title: 'Light Mode',
-      icon: Sun,
-      tagline: 'Soft blush pink & romantic stationery',
-      description: 'Delicate pastel blush palette, crimson badges, soft pink washi tape, and warm serif typography.',
-      previewBg: 'bg-gradient-to-br from-[#FFF1F6] via-[#FDF2F8] to-[#FFF7ED]',
-      envelopeBg: 'bg-[#FDF4F9] border-[#FECDD3]',
-      accentColor: '#F43F5E',
-    },
-    {
-      key: 'dark',
-      title: 'Dark Mode',
-      icon: Moon,
-      tagline: 'Midnight navy & cinematic letter',
-      description: 'Deep midnight navy surfaces, sky blue script subtitles, royal blue badges, and glowing dark envelope.',
-      previewBg: 'bg-gradient-to-b from-[#070B14] via-[#0A1122] to-[#070B14]',
-      envelopeBg: 'bg-[#14223D] border-[#1E3A5F]',
-      accentColor: '#7DD3FC',
-    },
-  ];
+      {
+        key: 'light',
+        title: 'Light Mode',
+        icon: Sun,
+        tagline: 'Soft blush pink & romantic stationery',
+        description: 'Delicate pastel blush palette, crimson badges, soft pink washi tape, and warm serif typography.',
+        previewBg: 'bg-gradient-to-br from-[#FFF1F6] via-[#FDF2F8] to-[#FFF7ED]',
+        envelopeBg: 'bg-[#FDF4F9] border-[#FECDD3]',
+        accentColor: '#F43F5E',
+      },
+      {
+        key: 'dark',
+        title: 'Dark Mode',
+        icon: Moon,
+        tagline: 'Midnight navy & cinematic letter',
+        description: 'Deep midnight navy surfaces, sky blue script subtitles, royal blue badges, and glowing dark envelope.',
+        previewBg: 'bg-gradient-to-b from-[#070B14] via-[#0A1122] to-[#070B14]',
+        envelopeBg: 'bg-[#14223D] border-[#1E3A5F]',
+        accentColor: '#7DD3FC',
+      },
+    ];
 
   return (
     <div className="space-y-5">
@@ -69,20 +69,18 @@ export function SenderThemeSelector({
             <div
               key={opt.key}
               onClick={() => onChange(opt.key)}
-              className={`rounded-3xl p-4 sm:p-5 text-left border-2 transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
-                isSelected
+              className={`rounded-3xl p-4 sm:p-5 text-left border-2 transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${isSelected
                   ? 'border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 shadow-xl ring-2 ring-rose-300/40 scale-[1.01]'
                   : 'border-rose-200/50 hover:border-rose-300 bg-white/70 dark:bg-slate-900/50 hover:shadow-md'
-              }`}
+                }`}
             >
               {/* Header */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                        opt.key === 'dark' ? 'bg-purple-950/60 text-purple-300' : 'bg-amber-100 text-amber-700'
-                      }`}
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center ${opt.key === 'dark' ? 'bg-purple-950/60 text-purple-300' : 'bg-amber-100 text-amber-700'
+                        }`}
                     >
                       <Icon className="w-4 h-4" />
                     </div>
@@ -97,11 +95,10 @@ export function SenderThemeSelector({
                   </div>
 
                   <div
-                    className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
-                      isSelected
+                    className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${isSelected
                         ? 'border-rose-500 bg-rose-500 text-white'
                         : 'border-slate-300 dark:border-slate-700 bg-transparent'
-                    }`}
+                      }`}
                   >
                     {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                   </div>
@@ -114,9 +111,8 @@ export function SenderThemeSelector({
 
               {/* Visual Mini Snapshot */}
               <div
-                className={`rounded-2xl p-3 border overflow-hidden relative ${opt.previewBg} ${
-                  opt.key === 'dark' ? 'border-white/10 text-white' : 'border-[#E8DFC8] text-[#2B2118]'
-                }`}
+                className={`rounded-2xl p-3 border overflow-hidden relative ${opt.previewBg} ${opt.key === 'dark' ? 'border-white/10 text-white' : 'border-[#E8DFC8] text-[#2B2118]'
+                  }`}
               >
                 {/* Mini Envelope & Card representation */}
                 <div className="flex items-center justify-between gap-2">
@@ -131,11 +127,10 @@ export function SenderThemeSelector({
                   </div>
 
                   <div
-                    className={`flex-1 rounded-xl p-2.5 border shadow-sm ${
-                      opt.key === 'dark'
+                    className={`flex-1 rounded-xl p-2.5 border shadow-sm ${opt.key === 'dark'
                         ? 'bg-[#17151C] border-rose-400/20 text-[#F4EFEB]'
                         : 'bg-white border-[#E8DFD0] text-[#2B2118]'
-                    }`}
+                      }`}
                   >
                     <span className="text-[10px] font-serif-title font-bold block truncate">Dear Cuitee</span>
                     <span className="text-[9px] font-script text-rose-500 block">forever yours</span>
@@ -167,22 +162,20 @@ export function SenderThemeSelector({
             <button
               type="button"
               onClick={() => setPreviewTab('unopened')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                previewTab === 'unopened'
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${previewTab === 'unopened'
                   ? 'bg-rose-500 text-white shadow-xs'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               💌 Unopened Envelope
             </button>
             <button
               type="button"
               onClick={() => setPreviewTab('opened')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                previewTab === 'opened'
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${previewTab === 'opened'
                   ? 'bg-rose-500 text-white shadow-xs'
                   : 'text-slate-400 hover:text-white'
-              }`}
+                }`}
             >
               📖 Opened Story
             </button>
@@ -257,7 +250,7 @@ export function SenderThemeSelector({
                   I genuinely promise to do better every single day.
                 </p>
                 <div className="mt-4 pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between">
-                  <span className={`font-script text-xl ${cfg.subColor}`}>With all my love, {senderName || 'Anuj'}</span>
+                  <span className={`font-script text-xl ${cfg.subColor}`}>With all my love, {senderName || 'SomeOne'}</span>
                   <span className="text-[10px] opacity-60 font-mono">Special Delivery</span>
                 </div>
               </div>

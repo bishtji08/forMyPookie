@@ -150,6 +150,7 @@ export default function DemoExperiencePage() {
                 title="What You Truly Mean To Me ❤️"
                 senderName="SomeOne Special"
                 receiverName="My Pookie"
+                receiverNickname="Pookie"
                 content="Before this little fight, there was an entire story called us. The late-night calls where we talked about nothing for hours, laughing until our stomachs hurt, and all the quiet moments where I knew you were my favorite person in the entire world.&#10;&#10;I love you. Not the social media caption kind. The real, quiet, show-up-for-you kind of love."
                 secretNote="P.S. Whatever happens, you deserve the sweetest smile today. Take all the time you need. You will always be special to me. ❤️"
                 theme={selectedTheme}

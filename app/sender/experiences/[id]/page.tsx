@@ -145,8 +145,8 @@ export default function ExperienceDetailPage() {
         .eq('email', receiverEmail.trim())
         .maybeSingle();
       if (!receiverProfile) {
- toast({ title: 'Receiver not found', description: 'Ask them to sign up first with this email.', variant: 'destructive' });
- return;
+        toast({ title: 'Receiver not found', description: 'Ask them to sign up first with this email.', variant: 'destructive' });
+        return;
       }
       const { error } = await supabase
         .from('experiences')
@@ -362,11 +362,10 @@ export default function ExperienceDetailPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={togglePublish}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                  exp.status === 'active'
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${exp.status === 'active'
                     ? 'bg-green-100 text-green-600 hover:bg-green-200'
                     : 'bg-gradient-to-r from-rose-400 to-lavender-400 text-white hover:shadow-lg'
-                }`}
+                  }`}
               >
                 {exp.status === 'active' ? 'Unpublish' : 'Publish'}
               </button>
@@ -380,11 +379,10 @@ export default function ExperienceDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-              exp.status === 'active' ? 'bg-green-100 text-green-600' :
-              exp.status === 'draft' ? 'bg-amber-100 text-amber-600' :
-              'bg-gray-100 text-gray-500'
-            }`}>{exp.status}</span>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${exp.status === 'active' ? 'bg-green-100 text-green-600' :
+                exp.status === 'draft' ? 'bg-amber-100 text-amber-600' :
+                  'bg-gray-100 text-gray-500'
+              }`}>{exp.status}</span>
             {exp.is_opened && <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-rose-100 text-rose-600"><Eye className="w-3 h-3" /> Opened {exp.opened_at && new Date(exp.opened_at).toLocaleDateString()}</span>}
             {exp.response_status && <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-lavender-100 text-lavender-600"><Heart className="w-3 h-3" /> {exp.response_status.toUpperCase()}</span>}
           </div>
@@ -396,9 +394,8 @@ export default function ExperienceDetailPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                tab === t.key ? 'bg-gradient-to-r from-rose-400 to-lavender-400 text-white shadow-md' : 'bg-white/60 text-rose-600/70 hover:bg-rose-50'
-              }`}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${tab === t.key ? 'bg-gradient-to-r from-rose-400 to-lavender-400 text-white shadow-md' : 'bg-white/60 text-rose-600/70 hover:bg-rose-50'
+                }`}
             >
               <t.icon className="w-4 h-4" />
               {t.label}
@@ -519,11 +516,10 @@ export default function ExperienceDetailPage() {
                   <button
                     type="button"
                     onClick={() => setDateCategory('all')}
-                    className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
-                      dateCategory === 'all'
+                    className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${dateCategory === 'all'
                         ? 'bg-rose-500 text-white shadow-xs'
                         : 'bg-white/80 text-rose-600 hover:bg-white border border-rose-100'
-                    }`}
+                      }`}
                   >
                     🌟 All
                   </button>
@@ -532,11 +528,10 @@ export default function ExperienceDetailPage() {
                       type="button"
                       key={catKey}
                       onClick={() => setDateCategory(catKey as any)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
-                        dateCategory === catKey
+                      className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${dateCategory === catKey
                           ? 'bg-rose-500 text-white shadow-xs'
                           : 'bg-white/80 text-rose-600 hover:bg-white border border-rose-100'
-                      }`}
+                        }`}
                     >
                       {cat.emoji} {cat.label}
                     </button>
@@ -552,11 +547,10 @@ export default function ExperienceDetailPage() {
                         type="button"
                         key={opt.key}
                         onClick={() => toggleDateOption(opt.key)}
-                        className={`p-2.5 rounded-xl text-left border transition-all text-xs flex flex-col justify-between ${
-                          isSelected
+                        className={`p-2.5 rounded-xl text-left border transition-all text-xs flex flex-col justify-between ${isSelected
                             ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white border-transparent shadow-xs'
                             : 'bg-white/60 text-rose-700 hover:bg-white border-rose-200/50'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-base">{opt.emoji}</span>
@@ -580,7 +574,7 @@ export default function ExperienceDetailPage() {
                           handleAddCustomDate();
                         }
                       }}
-                      placeholder="Add custom date (e.g. Rainy walk 🌧️, Rooftop stargazing 🔭)"
+                      placeholder="Add a place where we can go together (e.g. Rainy walk 🌧️, Temple visit ⛩️ )"
                       className="flex-1 px-3.5 py-2 rounded-xl bg-white/80 border border-rose-200/60 focus:border-rose-400 outline-none text-rose-700 text-xs"
                     />
                     <button

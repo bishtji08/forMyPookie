@@ -27,9 +27,8 @@ import { FloatingAmbientHearts } from '@/components/experience/floating-ambient-
 // Simplified 6 Core Date Ideas
 const SIMPLE_DATE_IDEAS = [
   { key: 'coffee', label: 'Coffee & Talk', emoji: '☕' },
-  { key: 'dinner', label: 'Dinner Date', emoji: '🍕' },
-  { key: 'movie', label: 'Movie Night', emoji: '🎬' },
-  { key: 'stargazing', label: 'Stargazing Night', emoji: '🔭' },
+  { key: 'temple visit', label: 'Temple Visit', emoji: '' },
+  { key: 'movie', label: 'Movie', emoji: '🎬' },
   { key: 'walk', label: 'Sunset Walk', emoji: '🌅' },
   { key: 'surprise', label: 'Surprise Me', emoji: '✨' },
 ];
@@ -670,6 +669,7 @@ export default function LoveExperiencePage() {
                   title="Things I Should Have Said Properly…"
                   senderName={exp.sender_name}
                   receiverName={exp.receiver_name}
+                  receiverNickname={exp?.receiver_nickname}
                   content={exp.apology_message}
                   showSignature={true}
                   theme={theme}
@@ -687,6 +687,7 @@ export default function LoveExperiencePage() {
                   title="What You Truly Mean To Me ❤️"
                   senderName={exp?.sender_name}
                   receiverName={exp?.receiver_name}
+                  receiverNickname={exp?.receiver_nickname}
                   content={exp?.love_letter || "Before this little fight, there was an entire story called us. You mean the world to me and I love you with all my heart."}
                   secretNote={exp?.final_letter || "P.S. Whatever happens, you deserve the sweetest smile today. You will always be special to me. ❤️"}
                   showSignature={false}
