@@ -20,6 +20,7 @@ interface ParchmentLetterProps {
   theme?: ExperienceTheme | string;
   isDark?: boolean;
   accentColor?: string;
+  onSecretOpen?: () => void;
 }
 
 export function ParchmentLetter({
@@ -36,6 +37,7 @@ export function ParchmentLetter({
   theme = 'light',
   isDark = false,
   accentColor,
+  onSecretOpen,
 }: ParchmentLetterProps) {
   const [secretOpen, setSecretOpen] = useState(false);
 
@@ -46,7 +48,11 @@ export function ParchmentLetter({
 
   const toggleSecret = () => {
     playPop();
-    setSecretOpen((prev) => !prev);
+    setSecretOpen((prev) => {
+      const next = !prev;
+      if (next) onSecretOpen?.();
+      return next;
+    });
   };
 
   return (

@@ -1,10 +1,10 @@
 ﻿'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Search, Filter, ChevronLeft, ChevronRight,
-  Loader2, Shield, UserX, UserCheck, Trash2, AlertTriangle, X, Check
+  Loader2, Shield, UserX, UserCheck, Trash2, AlertTriangle, X, Check, KeyRound
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/types';
@@ -49,6 +49,8 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(0);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [passwordUser, setPasswordUser] = useState<Profile | null>(null);
+  const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState<ConfirmDialog>({
     open: false, title: '', message: '', confirmLabel: '', confirmClass: '', onConfirm: () => {}
   });
@@ -94,6 +96,34 @@ export default function AdminUsersPage() {
     setActionLoading(null);
   };
 
+  const handleRoleUpdate = async (userId: string, role: Exclude<RoleFilter, 'all'>) => {
+    setActionLoading(`${userId}:role`);
+    const { error } = await supabase.from('profiles').update({ role, updated_at: new Date().toISOString() }).eq('id', userId);
+    if (error) showToast('Failed to update role', 'error');
+    else { showToast('User role updated'); await fetchUsers(); }
+    setActionLoading(null);
+  };
+
+  const handlePasswordUpdate = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!passwordUser || newPassword.length < 8) {
+      showToast('Password must be at least 8 characters', 'error');
+      return;
+    }
+
+    setActionLoading(`${passwordUser.id}:password`);
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch(`/api/admin/users/${passwordUser.id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${session?.access_token || ''}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: newPassword }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) showToast(result.error || 'Failed to update password', 'error');
+    else { showToast('Password updated successfully'); setPasswordUser(null); setNewPassword(''); }
+    setActionLoading(null);
+  };
+
   const handleBlock = async (userId: string) => {
     setActionLoading(userId);
     const { data: authData } = await supabase.auth.getUser();
@@ -129,6 +159,38 @@ export default function AdminUsersPage() {
           >
             {toast.type === 'success' ? <Check className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
             {toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {passwordUser && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.form onSubmit={handlePasswordUpdate} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5 text-rose-500" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-rose-700">Reset Password</h3>
+                  <p className="text-xs text-rose-400/70">{passwordUser.email}</p>
+                </div>
+              </div>
+              <label className="block text-sm font-medium text-rose-700 mb-2" htmlFor="new-password">New password</label>
+              <input id="new-password" type="password" minLength={8} required value={newPassword} onChange={event => setNewPassword(event.target.value)}
+                placeholder="At least 8 characters" autoComplete="new-password"
+                className="w-full px-4 py-2.5 rounded-xl bg-rose-50/50 border border-rose-100 text-sm text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300/50" />
+              <div className="flex gap-3 justify-end mt-6">
+                <button type="button" onClick={() => { setPasswordUser(null); setNewPassword(''); }}
+                  className="px-4 py-2 rounded-xl text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Cancel</button>
+                <button type="submit" disabled={actionLoading === `${passwordUser.id}:password`}
+                  className="px-4 py-2 rounded-xl text-sm text-white font-medium bg-rose-500 hover:bg-rose-600 disabled:opacity-50 transition-colors">
+                  {actionLoading === `${passwordUser.id}:password` ? 'Updating...' : 'Update password'}
+                </button>
+              </div>
+            </motion.form>
           </motion.div>
         )}
       </AnimatePresence>
@@ -244,7 +306,15 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-rose-600/70">{user.email}</td>
-                    <td className="px-5 py-3.5"><RoleBadge role={user.role} /></td>
+                    <td className="px-5 py-3.5">
+                      <select value={user.role} disabled={actionLoading === `${user.id}:role`} onChange={event => handleRoleUpdate(user.id, event.target.value as Exclude<RoleFilter, 'all'>)}
+                        aria-label={`Change role for ${user.name || user.email}`}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-rose-100 text-xs font-semibold text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300/50 disabled:opacity-50">
+                        <option value="sender">Sender</option>
+                        <option value="receiver">Receiver</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </td>
                     <td className="px-5 py-3.5"><StatusBadge status={user.status} /></td>
                     <td className="px-5 py-3.5 text-rose-400/60 text-xs">
                       {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -255,6 +325,10 @@ export default function AdminUsersPage() {
                           <Loader2 className="w-4 h-4 text-rose-400 animate-spin" />
                         ) : (
                           <>
+                            <button title="Reset password" onClick={() => setPasswordUser(user)}
+                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors">
+                              <KeyRound className="w-4 h-4" />
+                            </button>
                             {user.status === 'active' ? (
                               <button title="Disable user"
                                 onClick={() => openConfirm('Disable User', `Are you sure you want to disable ${user.name}? They won't be able to login.`, 'Disable', 'bg-gray-500 hover:bg-gray-600', () => handleStatusUpdate(user.id, 'disabled'))}

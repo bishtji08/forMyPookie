@@ -128,12 +128,12 @@ export function InteractiveEnvelope({
         </div>
       </div>
 
-      {/* Tap to open */}
+      {/* Secret note action */}
       <p
         onClick={handleClick}
         className={`font-script text-2xl sm:text-3xl italic tracking-wide mt-6 sm:mt-8 animate-pulse cursor-pointer ${cfg.envelope.tapText}`}
       >
-        tap to open 💌
+        Tap To Open 💌
       </p>
     </div>
   );

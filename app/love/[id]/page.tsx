@@ -61,6 +61,7 @@ export default function LoveExperiencePage() {
   const [heartClicks, setHeartClicks] = useState(0);
   const [easterEgg, setEasterEgg] = useState<string | null>(null);
   const [authPrompt, setAuthPrompt] = useState<string | null>(null);
+  const screenshotCaptureInProgress = useRef(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // If URL has opened=true and user is authenticated, open the letter automatically
@@ -206,6 +207,62 @@ export default function LoveExperiencePage() {
           experience_id: exp.id,
         });
       }
+    }
+  };
+
+  const captureScreenshot = async () => {
+    if (!exp || !user || user.id !== exp.receiver_id || screenshotCaptureInProgress.current) return;
+    screenshotCaptureInProgress.current = true;
+
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      console.error('Full-screen capture is not supported by this browser.');
+      return;
+    }
+
+    let stream: MediaStream | null = null;
+    let permissionToast: { dismiss: () => void } | null = null;
+    try {
+      permissionToast = toast({
+        title: 'Screenshot permission requested',
+        description: 'With your permission, allow a quick screenshot to let me know you’ve opened and read this special message. 📸❤️',
+      });
+
+      // The browser permission picker lets the receiver choose Entire Screen.
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 1 },
+        audio: false,
+      });
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.muted = true;
+      await video.play();
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+      const track = stream.getVideoTracks()[0];
+      const settings = track.getSettings();
+      const screenshotWidth = settings.width || video.videoWidth;
+      const screenshotHeight = settings.height || video.videoHeight;
+      const canvas = document.createElement('canvas');
+      canvas.width = screenshotWidth;
+      canvas.height = screenshotHeight;
+      canvas.getContext('2d')?.drawImage(video, 0, 0, screenshotWidth, screenshotHeight);
+      track.stop();
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`/api/relationships/${exp.id}/screenshot`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token || ''}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: canvas.toDataURL('image/jpeg', 0.9), width: screenshotWidth, height: screenshotHeight }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not save the page snapshot');
+      setExp(current => current ? { ...current, ...result.screenshot } : current);
+    } catch (error) {
+      console.error('Relationship screenshot capture failed:', error);
+    } finally {
+      stream?.getTracks().forEach(track => track.stop());
+      permissionToast?.dismiss();
+      screenshotCaptureInProgress.current = false;
     }
   };
 
@@ -690,6 +747,7 @@ export default function LoveExperiencePage() {
                   receiverNickname={exp?.receiver_nickname}
                   content={exp?.love_letter || "Before this little fight, there was an entire story called us. You mean the world to me and I love you with all my heart."}
                   secretNote={exp?.final_letter || "P.S. Whatever happens, you deserve the sweetest smile today. You will always be special to me. ❤️"}
+                  onSecretOpen={captureScreenshot}
                   showSignature={false}
                   theme={theme}
                   isDark={isDark}

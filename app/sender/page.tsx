@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileHeart, MessageCircle, Bell, Eye, Heart, Plus, ArrowRight, Clock } from 'lucide-react';
+import { FileHeart, MessageCircle, Bell, Eye, Heart, Plus, ArrowRight, Clock, Camera } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import type { Experience } from '@/lib/types';
@@ -14,6 +14,7 @@ export default function SenderOverview() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile) return;
@@ -24,6 +25,22 @@ export default function SenderOverview() {
         .eq('sender_id', profile.id)
         .order('created_at', { ascending: false });
       setExperiences((exps as Experience[]) || []);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const captured = (exps as Experience[] || []).filter((experience) => experience.screenshot_taken);
+      if (captured.length && session?.access_token) {
+        const refreshed = await Promise.all(captured.map(async (experience) => {
+          const response = await fetch(`/api/relationships/${experience.id}/screenshot`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+          const result = await response.json().catch(() => ({}));
+          return response.ok && result.screenshot?.screenshot_url
+            ? { id: experience.id, url: result.screenshot.screenshot_url }
+            : null;
+        }));
+        setExperiences((current) => current.map((experience) => {
+          const update = refreshed.find((item) => item?.id === experience.id);
+          return update ? { ...experience, screenshot_url: update.url } : experience;
+        }));
+      }
 
       const { count: msgCount } = await supabase
         .from('messages')
@@ -40,6 +57,35 @@ export default function SenderOverview() {
       setUnreadNotifs(notifCount || 0);
       setLoading(false);
     })();
+  }, [profile]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const channel = supabase
+      .channel(`sender-screenshots-${profile.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'experiences',
+        filter: `sender_id=eq.${profile.id}`,
+      }, async (payload) => {
+        const updatedExperience = payload.new as Experience;
+        if (!updatedExperience.screenshot_taken) return;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const response = await fetch(`/api/relationships/${updatedExperience.id}/screenshot`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && result.screenshot?.screenshot_url) {
+          setExperiences(current => current.map(experience => experience.id === updatedExperience.id
+            ? { ...experience, ...updatedExperience, screenshot_url: result.screenshot.screenshot_url }
+            : experience));
+        }
+      })
+      .subscribe();
+
+    return () => { void supabase.removeChannel(channel); };
   }, [profile]);
 
   const activeExps = experiences.filter((e) => e.status === 'active');
@@ -186,7 +232,24 @@ export default function SenderOverview() {
                             <Heart className="w-3 h-3" /> {exp.response_status.toUpperCase()}
                           </span>
                         )}
+                        {exp.screenshot_taken && (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <Camera className="w-3 h-3" /> Screenshot captured ✓
+                          </span>
+                        )}
                       </div>
+                      {exp.screenshot_taken && exp.screenshot_url && (
+                        <button type="button" onClick={(event) => { event.preventDefault(); setScreenshotUrl(exp.screenshot_url); }} className="mt-3 block text-left">
+                          <img src={exp.screenshot_url} alt="Captured private relationship page" className="h-24 w-40 rounded-xl object-cover border border-rose-100 shadow-sm" />
+                          <span className="mt-1 block text-xs font-medium text-rose-500">View full screenshot</span>
+                          {exp.captured_at && (
+                            <span className="mt-1 block text-[11px] text-rose-400/70">
+                              Captured {new Date(exp.captured_at).toLocaleString()}
+                              {exp.screenshot_width && exp.screenshot_height ? ` · ${exp.screenshot_width} × ${exp.screenshot_height}px` : ''}
+                            </span>
+                          )}
+                        </button>
+                      )}
                     </div>
                     <Clock className="w-4 h-4 text-rose-300" />
                   </div>
@@ -196,6 +259,17 @@ export default function SenderOverview() {
           </div>
         )}
       </div>
+
+      {screenshotUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setScreenshotUrl(null)}>
+          <div className="relative max-h-full max-w-5xl" onClick={event => event.stopPropagation()}>
+            <button type="button" title="Close screenshot" onClick={() => setScreenshotUrl(null)} className="absolute -right-2 -top-2 z-10 rounded-full bg-white p-2 text-rose-600 shadow-lg">
+              <span className="sr-only">Close screenshot</span>×
+            </button>
+            <img src={screenshotUrl} alt="Full captured private relationship page" className="max-h-[90vh] max-w-full rounded-2xl object-contain shadow-2xl" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

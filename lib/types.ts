@@ -38,6 +38,12 @@ export interface Experience {
   opened_at: string | null;
   last_accessed_at: string | null;
   response_status: ResponseStatus | null;
+  screenshot_taken: boolean;
+  screenshot_path: string | null;
+  screenshot_url: string | null;
+  captured_at: string | null;
+  screenshot_width: number | null;
+  screenshot_height: number | null;
   date_options: string[];
   expires_at: string | null;
   created_at: string;
